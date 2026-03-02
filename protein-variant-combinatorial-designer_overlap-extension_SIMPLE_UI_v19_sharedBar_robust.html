@@ -953,13 +953,6 @@ html, body { max-width: 100%; overflow-x: hidden; }
     <div class="panel-hdr">
       <div class="panel-title">Assembly Preview (before PCR)</div>
       <div id="preview-badge-wrap"></div>
-      
-    <div class="shared-scroll-wrap" id="shared-scroll-wrap" style="display:none">
-      <div id="sharedScrollBar" aria-label="Horizontal scroll (shared)">
-        <div id="sharedScrollPad"></div>
-      </div>
-      <input id="sharedScrollRange" type="range" min="0" max="0" value="0" step="1" />
-    </div>
 
 <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;">
         <button class="exp-btn" onclick="copyAssemblyPreview()">⎘ Copy preview</button>
@@ -995,6 +988,13 @@ html, body { max-width: 100%; overflow-x: hidden; }
     </div>
   </div>
 </section>
+
+<div class="shared-scroll-wrap" id="shared-scroll-wrap" style="display:none">
+  <div id="sharedScrollBar" aria-label="Horizontal scroll (shared)">
+    <div id="sharedScrollPad"></div>
+  </div>
+  <input id="sharedScrollRange" type="range" min="0" max="0" value="0" step="1" />
+</div>
 
 
 <!-- ══════════════════════════════════════
