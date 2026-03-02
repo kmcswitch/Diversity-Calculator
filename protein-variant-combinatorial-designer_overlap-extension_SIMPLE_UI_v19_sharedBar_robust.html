@@ -1,0 +1,3608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Protein Variant Combinatorial Designer</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne+Mono&family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+/* ══════════════════════════════════════════
+   DESIGN SYSTEM
+══════════════════════════════════════════ */
+:root {
+  /* Light theme */
+  --ink:    #ffffff;
+  --ink2:   #ffffff;
+  --ink3:   #f8fafc;
+  --ink4:   #f1f5f9;
+  --ink5:   #e2e8f0;
+
+  --b0:     #e2e8f0;
+  --b1:     #cbd5e1;
+  --b2:     #94a3b8;
+
+  --dim:    #64748b;
+  --slate:  #475569;
+  --mist:   #334155;
+  --silver: #0f172a;
+  --cloud:  #f1f5f9;
+  --white:  #0f172a;
+
+  --lime:   #0f766e;
+  --lime2:  #115e59;
+
+  --gold:   #b45309;
+  --gold2:  #92400e;
+
+  --coral:  #dc2626;
+  --sky:    #0369a1;
+  --violet: #7c3aed;
+  --rose:   #be185d;
+
+  --mono:   'Syne Mono', 'DM Mono', monospace;
+  --sans:   'Syne', sans-serif;
+  --dm:     'DM Mono', monospace;
+}
+
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { font-size:14px; }
+body {
+  min-height:100vh;
+  background:var(--ink);
+  background-image:
+    radial-gradient(ellipse 900px 600px at -10% -10%, rgba(0,255,176,.025) 0%, transparent 55%),
+    radial-gradient(ellipse 700px 700px at 110% 110%, rgba(80,200,255,.025) 0%, transparent 55%);
+  color:var(--silver);
+  font-family:var(--mono);
+  padding-bottom:80px;
+}
+
+/* ══════════════════════════════════════════
+   APP SHELL
+══════════════════════════════════════════ */
+.app { max-width:1500px; margin:0 auto; padding:0 24px; }
+
+/* ══════════════════════════════════════════
+   HEADER
+══════════════════════════════════════════ */
+.hdr {
+  display:flex; align-items:flex-start; justify-content:space-between;
+  padding:20px 0 16px; border-bottom:1px solid var(--b0);
+  flex-wrap:wrap; gap:12px;
+}
+.eyebrow { font-size:9px; letter-spacing:.4em; color:var(--lime); text-transform:uppercase; font-weight:700; font-family:var(--dm); }
+.title { font-family:var(--sans); font-size:21px; font-weight:800; color:var(--white); letter-spacing:-.02em; margin:3px 0 2px; }
+.subtitle { font-size:10px; color:var(--slate); font-family:var(--dm); }
+.codon-scheme-wrap { display:flex; align-items:center; gap:8px; padding-top:4px; }
+.codon-scheme-lbl { font-size:9px; color:var(--slate); letter-spacing:.12em; text-transform:uppercase; }
+.codon-scheme-sel {
+  background:var(--ink3); border:1px solid var(--b1); border-radius:5px;
+  padding:5px 28px 5px 10px; font-size:10px; color:var(--silver); outline:none;
+  font-family:var(--mono); cursor:pointer; appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%234a7d9e' d='M5 6L0 0h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 8px center;
+  transition:border-color .15s;
+}
+.codon-scheme-sel:focus { border-color:var(--lime); }
+
+/* ══════════════════════════════════════════
+   SEQUENCE INPUT
+══════════════════════════════════════════ */
+.input-section { padding:16px 0 0; }
+.sec-label { font-size:9px; letter-spacing:.22em; color:var(--slate); text-transform:uppercase; font-family:var(--dm); margin-bottom:8px; display:block; }
+.input-row { display:flex; gap:8px; align-items:flex-start; }
+.five-badge {
+  font-size:9px; color:var(--lime); font-weight:700; letter-spacing:.1em; flex-shrink:0;
+  padding:7px 10px; border:1px solid var(--b1); border-radius:4px; margin-top:1px;
+  font-family:var(--dm);
+}
+.seq-input {
+   background:var(--ink2); border:1px solid var(--b1); border-radius:6px;
+  padding:9px 14px; font-size:13px; color:var(--lime); outline:none;
+  font-family:var(--mono); letter-spacing:.12em; transition:border-color .2s;
+  min-height:44px; resize:none; overflow:hidden; line-height:1.5;
+}
+.seq-input:focus { border-color:var(--lime); box-shadow:0 0 0 2px rgba(0,255,176,.06); }
+.seq-right { display:flex; flex-direction:column; gap:6px; align-items:flex-end; flex-shrink:0; }
+.seq-stats { font-size:9px; color:var(--dim); text-align:right; line-height:2; font-family:var(--dm); }
+.clear-btn {
+  font-size:9px; padding:4px 10px; border:1px solid var(--b1); border-radius:3px;
+  background:transparent; color:var(--dim); cursor:pointer; font-family:var(--mono);
+  transition:all .15s; letter-spacing:.06em;
+}
+.clear-btn:hover { border-color:var(--coral); color:var(--coral); }
+
+/* ══════════════════════════════════════════
+   PROTEIN SEQUENCE VIEWER
+══════════════════════════════════════════ */
+.viewer-section { margin-top:18px; }
+.viewer-panel {
+  background:var(--ink2); border:1px solid var(--b0); border-radius:10px;
+  padding:20px; position:relative;
+}
+.viewer-scroll { overflow-x:auto; padding-bottom:4px; }
+
+/* Position strip */
+.pos-strip { display:flex; flex-wrap:wrap; gap:4px; align-items:flex-start; }
+
+.aa-pos {
+  display:flex; flex-direction:column; align-items:center;
+  width:52px; flex-shrink:0; cursor:pointer; position:relative;
+  border-radius:7px; padding:4px 3px 6px;
+  transition:background .12s;
+}
+.aa-pos:hover { background:var(--ink4); }
+.aa-pos.has-vars { background:var(--ink4); }
+.aa-pos.active { background:var(--ink5); box-shadow:0 0 0 1.5px var(--b2); }
+
+.aa-num { font-size:7.5px; color:var(--dim); letter-spacing:.05em; font-family:var(--dm); margin-bottom:2px; }
+.aa-letter {
+  font-family:var(--sans); font-size:22px; font-weight:800;
+  line-height:1; user-select:none; transition:all .12s;
+}
+.aa-codon { font-size:8px; color:var(--dim); letter-spacing:.06em; font-family:var(--dm); margin-top:2px; }
+
+/* Variant pills under each position */
+.aa-var-pills { display:flex; flex-wrap:wrap; gap:2px; justify-content:center; margin-top:4px; min-height:14px; }
+.var-pill {
+  font-size:9px; font-weight:700; font-family:var(--sans);
+  padding:1px 5px; border-radius:3px; border:1px solid;
+  cursor:pointer; transition:all .1s;
+}
+.var-pill:hover { opacity:.7; }
+
+/* ══════════════════════════════════════════
+   DROPDOWN POPOVER
+══════════════════════════════════════════ */
+.aa-dropdown {
+  position:absolute; z-index:1000;
+  background:var(--ink3); border:1px solid var(--b2); border-radius:10px;
+  padding:14px; width:300px;
+  box-shadow:0 20px 60px rgba(0,0,0,.7), 0 0 0 1px rgba(0,255,176,.06);
+  animation:drop-in .12s ease;
+  top:calc(100% + 6px); left:50%; transform:translateX(-50%);
+}
+@keyframes drop-in { from{opacity:0;transform:translateX(-50%) translateY(-6px);} to{opacity:1;transform:translateX(-50%) translateY(0);} }
+.dd-title { font-size:9px; color:var(--lime); letter-spacing:.2em; text-transform:uppercase; margin-bottom:10px; font-family:var(--dm); }
+.dd-groups { display:flex; flex-direction:column; gap:8px; }
+.dd-group-name { font-size:7.5px; color:var(--dim); letter-spacing:.15em; text-transform:uppercase; margin-bottom:4px; font-family:var(--dm); }
+.dd-aa-grid { display:flex; flex-wrap:wrap; gap:4px; }
+.dd-aa-btn {
+  width:30px; height:30px; border-radius:5px; border:1.5px solid var(--b1);
+  background:var(--ink4); font-family:var(--sans); font-size:14px; font-weight:800;
+  cursor:pointer; transition:all .1s; display:flex; align-items:center; justify-content:center;
+  color:var(--mist); user-select:none;
+}
+.dd-aa-btn:hover:not(.wt):not(.selected) { border-color:var(--b2); background:var(--ink5); transform:scale(1.08); }
+.dd-aa-btn.wt { border-style:dashed; cursor:pointer; }
+.dd-aa-btn.wt.excluded{ opacity:.35; }
+.dd-aa-btn.wt:hover:not(.selected){ border-color:var(--b2); background:var(--ink5); transform:scale(1.08); }
+.dd-aa-btn.selected { border-color:var(--c,var(--lime)); color:var(--c,var(--lime)); background:rgba(var(--cr,0,255,176),.12); }
+.dd-footer { display:flex; gap:6px; margin-top:10px; padding-top:10px; border-top:1px solid var(--b0); }
+.dd-clear-btn {
+   padding:5px; border:1px solid var(--b1); border-radius:4px;
+  background:transparent; color:var(--slate); cursor:pointer; font-family:var(--mono);
+  font-size:9px; transition:all .15s; letter-spacing:.06em;
+}
+.dd-clear-btn:hover { border-color:var(--coral); color:var(--coral); }
+.dd-done-btn {
+  flex:2; padding:5px; border:1px solid rgba(0,255,176,.4); border-radius:4px;
+  background:rgba(0,255,176,.08); color:var(--lime); cursor:pointer; font-family:var(--mono);
+  font-size:9px; font-weight:700; transition:all .15s; letter-spacing:.06em;
+}
+.dd-done-btn:hover { background:rgba(0,255,176,.16); }
+
+/* ══════════════════════════════════════════
+   MUTATION SUMMARY STRIP
+══════════════════════════════════════════ */
+.mutation-strip {
+  margin-top:14px; padding:12px 16px;
+  background:var(--ink3); border:1px solid var(--b0); border-radius:8px;
+  display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap;
+}
+.mut-strip-label { font-size:9px; color:var(--slate); letter-spacing:.15em; text-transform:uppercase; flex-shrink:0; padding-top:3px; font-family:var(--dm); }
+.mut-tags { display:flex; flex-wrap:wrap; gap:6px;  }
+.mut-tag {
+  display:flex; align-items:center; gap:4px;
+  padding:3px 8px; border-radius:5px; border:1px solid var(--b1);
+  background:var(--ink4); font-size:10px; font-family:var(--dm); color:var(--silver);
+}
+.mut-tag-pos { color:var(--gold); font-weight:700; }
+.mut-tag-arrow { color:var(--dim); }
+.mut-tag-aas { color:var(--lime); font-weight:700; }
+.mut-tag-del { color:var(--dim); cursor:pointer; margin-left:2px; transition:color .12s; }
+.mut-tag-del:hover { color:var(--coral); }
+.mut-tag-excl{
+  font-size:8px;
+  padding:1px 7px;
+  border-radius:10px;
+  border:1px solid rgba(220,38,38,.25);
+  background:rgba(220,38,38,.06);
+  color:var(--coral);
+  margin-left:6px;
+  letter-spacing:.06em;
+}
+.no-mut-hint { font-size:10px; color:var(--dim); font-family:var(--dm); padding-top:2px; }
+
+/* ══════════════════════════════════════════
+   OUTPUT STACK (collapsible panels)
+══════════════════════════════════════════ */
+.main-grid{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+  margin-top:16px;
+}
+
+/* ══════════════════════════════════════════
+   COMBINATIONS PANEL
+══════════════════════════════════════════ */
+.combos-panel {
+  background:var(--ink2); border:1px solid var(--b0); border-radius:10px;
+  display:flex; flex-direction:column; overflow:hidden; min-height:400px;
+}
+.panel-hdr {
+  padding:13px 18px; border-bottom:1px solid var(--b0);
+  background:var(--ink3); display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  flex-shrink:0;
+}
+.panel-title { font-family:var(--sans); font-size:13px; font-weight:700; color:var(--white); }
+
+/* Collapsible combinations panel */
+.panel-toggle{
+  margin-left:6px;
+  width:26px; height:26px;
+  border:1px solid var(--b1);
+  background:transparent;
+  border-radius:6px;
+  color:var(--slate);
+  cursor:pointer;
+  font-family:var(--dm);
+  font-size:14px;
+  line-height:1;
+  display:flex; align-items:center; justify-content:center;
+  transition:all .12s;
+}
+.panel-toggle:hover{ border-color:var(--lime); color:var(--lime); background:rgba(0,255,176,.06); }
+
+.collapsed-note{
+  display:none;
+  padding:10px 18px;
+  border-bottom:1px solid var(--b0);
+  background:rgba(0,0,0,.02);
+  color:var(--slate);
+  font-family:var(--dm);
+  font-size:10px;
+  line-height:1.6;
+}
+.combos-panel.collapsed{ min-height:0; }
+.combos-panel.collapsed .collapsed-note{ display:block; }
+.combos-panel.collapsed .combos-empty,
+.combos-panel.collapsed .combos-scroll,
+.combos-panel.collapsed #combo-export{
+  display:none !important;
+}
+
+
+/* Collapsible oligos panel (matches combinations behavior) */
+.oligos-panel.collapsed{ min-height:0; }
+.oligos-panel.collapsed .collapsed-note{ display:block; }
+.oligos-panel.collapsed .oligos-scroll,
+.oligos-panel.collapsed #oligo-export{
+  display:none !important;
+}
+
+/* Library generator (top controls + RUN) */
+.libgen-section{ margin-top:14px; }
+.libgen-panel{
+  background:var(--ink2);
+  border:1px solid var(--b0);
+  border-radius:10px;
+  overflow:hidden;
+}
+.run-btn{
+  margin-left:0;
+  font-size:9px;
+  padding:6px 14px;
+  border-radius:6px;
+  border:1px solid rgba(15,118,110,.35);
+  background:rgba(15,118,110,.10);
+  color:var(--lime);
+  cursor:pointer;
+  font-family:var(--dm);
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  transition:all .14s;
+}
+.run-btn:hover{ border-color:rgba(15,118,110,.55); background:rgba(15,118,110,.16); }
+.run-btn.pending{
+  border-color:rgba(220,38,38,.45);
+  background:rgba(220,38,38,.06);
+  color:var(--coral);
+}
+.undo-btn{
+  font-size:9px;
+  padding:6px 12px;
+  border-radius:6px;
+  border:1px solid var(--b1);
+  background:var(--ink3);
+  color:var(--slate);
+  cursor:pointer;
+  font-family:var(--dm);
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  transition:all .14s;
+}
+.undo-btn:hover{ border-color:var(--b2); background:var(--ink4); color:var(--mist); }
+.undo-btn:disabled{ opacity:.45; cursor:not-allowed; }
+.run-hint{
+  margin-left:auto;
+  font-size:8px;
+  padding:2px 9px;
+  border-radius:10px;
+  border:1px solid rgba(220,38,38,.25);
+  background:rgba(220,38,38,.06);
+  color:var(--coral);
+  font-family:var(--dm);
+  letter-spacing:.06em;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+
+/* Assembly viewer spacing */
+.aln-spacer{height:14px;}
+.count-badge {
+  font-size:8px; padding:2px 9px; border-radius:10px;
+  background:rgba(0,255,176,.1); border:1px solid rgba(0,255,176,.25); color:var(--lime);
+  font-weight:700; font-family:var(--dm); letter-spacing:.05em;
+}
+.warn-badge {
+  font-size:8px; padding:2px 9px; border-radius:10px;
+  background:rgba(255,208,96,.1); border:1px solid rgba(255,208,96,.25); color:var(--gold);
+  font-family:var(--dm);
+}
+.combos-scroll {  overflow:auto; }
+.combos-empty {  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:40px; text-align:center; }
+.empty-icon { font-size:40px; opacity:.2; }
+.empty-txt { font-size:11px; color:var(--dim); line-height:1.9; font-family:var(--dm); }
+
+/* Combo table */
+.combo-tbl { width:100%; border-collapse:collapse; font-size:10px; }
+.combo-tbl th {
+  position:sticky; top:0; z-index:2; padding:8px 12px;
+  text-align:left; font-size:7.5px; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--slate); border-bottom:1px solid var(--b0);
+  background:var(--ink3); font-weight:600; font-family:var(--dm); white-space:nowrap;
+}
+.combo-tbl td { padding:9px 12px; border-bottom:1px solid var(--b0); vertical-align:middle; }
+.combo-tbl tr:hover td { background:var(--ink4); }
+
+/* WT row special */
+.combo-tbl tr.wt-row td { background:rgba(0,255,176,.025); }
+.combo-tbl tr.wt-row:hover td { background:rgba(0,255,176,.04); }
+
+.combo-name { font-size:11px; font-weight:700; font-family:var(--dm); color:var(--white); white-space:nowrap; }
+.combo-name.wt { color:var(--lime); }
+.combo-muts { display:flex; flex-wrap:wrap; gap:3px; }
+.combo-mut-chip {
+  font-size:9px; font-weight:700; font-family:var(--sans);
+  padding:1px 6px; border-radius:3px; border:1px solid;
+}
+.combo-seq-dna {
+  font-size:9.5px; font-family:var(--dm); color:var(--mist);
+  letter-spacing:.06em; max-width:380px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.combo-seq-aa {
+  font-size:9.5px; font-family:var(--dm); color:var(--slate);
+  letter-spacing:.04em; max-width:280px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.combo-seq-dna .mut-nt { color:var(--gold); font-weight:700; }
+.combo-seq-aa  .mut-aa { color:var(--lime); font-weight:700; }
+.combo-copy {
+  font-size:8px; padding:3px 8px; border:1px solid var(--b1); border-radius:3px;
+  background:transparent; color:var(--dim); cursor:pointer; font-family:var(--mono);
+  transition:all .15s; white-space:nowrap;
+}
+.combo-copy:hover { border-color:var(--lime); color:var(--lime); }
+.combo-copy.ok   { border-color:var(--lime2); color:var(--lime2); }
+
+/* Export bar */
+.export-bar {
+  display:flex; gap:8px; padding:12px 18px; border-top:1px solid var(--b0);
+  flex-wrap:wrap; background:var(--ink3); flex-shrink:0;
+}
+.exp-btn {
+  font-size:9px; padding:6px 14px; border-radius:4px; cursor:pointer;
+  font-family:var(--mono); transition:all .15s; letter-spacing:.08em; text-transform:uppercase;
+  border:1px solid var(--b1); color:var(--mist); background:transparent;
+}
+.exp-btn:hover { border-color:var(--lime); color:var(--lime); }
+.exp-btn.primary { background:rgba(0,255,176,.08); border-color:rgba(0,255,176,.3); color:var(--lime); }
+.exp-btn.primary:hover { background:rgba(0,255,176,.16); }
+.exp-btn.danger { color:var(--dim); }
+.exp-btn.danger:hover { border-color:var(--coral); color:var(--coral); }
+
+/* ══════════════════════════════════════════
+   OLIGO ORDER PANEL
+══════════════════════════════════════════ */
+.oligos-panel {
+  background:var(--ink2); border:1px solid var(--b0); border-radius:10px;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.oligos-scroll {  overflow:auto; }
+.oligo-entry {
+  padding:12px 16px; border-bottom:1px solid var(--b0);
+  display:flex; flex-direction:column; gap:6px;
+}
+.oligo-entry:last-child { border-bottom:none; }
+.oligo-entry-hdr {
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.oligo-name { font-size:10px; font-weight:700; color:var(--white); font-family:var(--dm); }
+.oligo-change {
+  font-family:var(--sans); font-size:12px; font-weight:800;
+}
+.oligo-tags { display:flex; gap:5px; flex-wrap:wrap; }
+.otag {
+  font-size:8px; padding:2px 7px; border-radius:9px; border:1px solid;
+  font-family:var(--dm); letter-spacing:.04em;
+}
+.otag.g { color:var(--lime); border-color:rgba(0,255,176,.3); background:rgba(0,255,176,.07); }
+.otag.a { color:var(--gold); border-color:rgba(255,208,96,.3); background:rgba(255,208,96,.07); }
+.otag.b { color:var(--sky); border-color:rgba(80,200,255,.3); background:rgba(80,200,255,.07); }
+
+.oligo-seq-wrap {
+  background:var(--ink); border:1px solid var(--b0); border-radius:5px;
+  padding:7px 10px; display:flex; align-items:flex-start; gap:8px;
+}
+.oligo-dir { font-size:8px; color:var(--dim); width:30px; flex-shrink:0; padding-top:1px; font-family:var(--dm); }
+.oligo-seq-txt {
+   font-size:11px; font-family:var(--dm); letter-spacing:.07em;
+  line-height:1.6; color:var(--mist); word-break:break-all;
+}
+.oligo-seq-txt .flank { color:var(--dim); }
+.oligo-seq-txt .mut   { color:var(--gold); font-weight:700; font-size:12.5px; }
+.oligo-copy-btn {
+  font-size:8px; padding:3px 8px; border:1px solid var(--b1); border-radius:3px;
+  background:transparent; color:var(--dim); cursor:pointer; font-family:var(--mono);
+  transition:all .15s; flex-shrink:0;
+}
+.oligo-copy-btn:hover { border-color:var(--gold); color:var(--gold); }
+.oligo-copy-btn.ok    { border-color:var(--lime2); color:var(--lime2); }
+.oligo-stats { display:flex; gap:10px; flex-wrap:wrap; }
+.ostat { font-size:8.5px; color:var(--dim); font-family:var(--dm); }
+.ostat span { color:var(--mist); }
+
+/* Controls row */
+.oligo-controls {
+  display:flex; align-items:center; gap:10px; padding:8px 16px 8px;
+  border-bottom:1px solid var(--b0); background:var(--ink3); flex-shrink:0; flex-wrap:wrap;
+}
+.ctrl-lbl { font-size:8.5px; color:var(--slate); font-family:var(--dm); }
+.ctrl-inp {
+  width:50px; background:var(--ink); border:1px solid var(--b1); border-radius:4px;
+  padding:4px 8px; font-size:11px; color:var(--white); outline:none;
+  font-family:var(--mono); text-align:center; transition:border-color .15s;
+}
+.ctrl-inp:focus { border-color:var(--lime); }
+.ctrl-copy-all {
+  margin-left:auto; font-size:9px; padding:5px 12px; border:1px solid rgba(255,208,96,.3); border-radius:4px;
+  background:rgba(255,208,96,.07); color:var(--gold); cursor:pointer; font-family:var(--mono);
+  transition:all .15s; letter-spacing:.06em;
+}
+.ctrl-copy-all:hover { background:rgba(255,208,96,.14); }
+
+
+/* Oligo mode + assembly controls */
+.ctrl-sel{
+  background:var(--ink); border:1px solid var(--b1); border-radius:4px;
+  padding:4px 26px 4px 8px; font-size:10px; color:var(--white); outline:none;
+  font-family:var(--mono); cursor:pointer; appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%234a7d9e' d='M5 6L0 0h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 8px center;
+  transition:border-color .15s;
+}
+.ctrl-sel:focus{ border-color:var(--lime); }
+.ctrl-group{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.ctrl-chk{
+  display:flex; align-items:center; gap:6px;
+  font-size:8.5px; color:var(--slate); font-family:var(--dm);
+  padding:3px 7px; border:1px solid rgba(29,63,92,.8); border-radius:999px;
+  background:rgba(8,20,32,.35);
+}
+.ctrl-chk input{ accent-color: var(--lime); }
+.ctrl-pill{
+  font-size:8px; padding:2px 7px; border-radius:9px; border:1px solid;
+  font-family:var(--dm); letter-spacing:.04em;
+}
+.ctrl-pill.warn{ color:var(--gold); border-color:rgba(255,208,96,.35); background:rgba(255,208,96,.07); }
+.ctrl-pill.bad { color:var(--coral); border-color:rgba(255,96,112,.35); background:rgba(255,96,112,.07); }
+/* ══════════════════════════════════════════
+   SCROLLBAR
+══════════════════════════════════════════ */
+::-webkit-scrollbar { width:10px; height:10px; }
+::-webkit-scrollbar-track { background:var(--ink); }
+::-webkit-scrollbar-thumb { background:var(--b1); border-radius:2px; }
+::-webkit-scrollbar-thumb:hover { background:var(--b2); }
+
+
+/* Shared horizontal scrollbar (single control for WT + oligo output) */
+.asm-hscroll{
+  width:100%;
+  max-width:100%;
+  height:18px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  border-radius:10px;
+  background:#e6e8ec;
+  border:1px solid #cfd5de;
+  box-sizing:border-box;
+}
+.asm-hscroll-inner{ height:1px; width:1px; }
+
+/* Make the shared scrollbar easy to grab */
+.asm-hscroll::-webkit-scrollbar{ height:16px; }
+.asm-hscroll::-webkit-scrollbar-track{ background:#e6e8ec; border-radius:10px; }
+.asm-hscroll::-webkit-scrollbar-thumb{ background:#9aa6b8; border-radius:10px; border:3px solid #e6e8ec; }
+.asm-hscroll::-webkit-scrollbar-thumb:hover{ background:#7f8ea6; }
+
+
+/* Shared horizontal scrollbar bar pinned below WT + output panes */
+.asm-shared-scrollwrap{
+  padding:10px 16px 14px;
+  background:transparent;
+}
+.asm-hscroll.shared{
+  width:100%;
+  max-width:100%;
+  height:20px;
+}
+
+/* ══════════════════════════════════════════
+   ASSEMBLY PREVIEW (alignment + map)
+══════════════════════════════════════════ */
+.preview-section { margin-top:16px; }
+.preview-panel {
+  background:var(--ink2); border:1px solid var(--b0); border-radius:10px;
+  overflow:hidden;
+}
+.preview-controls {
+  display:flex; align-items:center; gap:10px; padding:8px 16px 8px;
+  border-bottom:1px solid var(--b0); background:var(--ink3); flex-wrap:wrap;
+}
+.preview-scroll {
+  padding:14px 16px;
+  width:100%;
+  max-width:100%;
+  box-sizing:border-box;
+  overflow-x:auto;
+  overflow-y:hidden;
+  max-height:none;
+}
+
+.asm-map-wrap { background:var(--ink); border:1px solid var(--b0); border-radius:8px; padding:10px; overflow:auto; max-width:100%; box-sizing:border-box; }
+.asm-map-note { font-size:9px; color:var(--slate); font-family:var(--dm); margin:6px 0 0; }
+.asm-map-svg text { font-family:var(--dm); fill:var(--mist); font-size:10px; }
+.asm-map-svg .axis { stroke:var(--b2); stroke-width:1; }
+.asm-map-svg .tick { stroke:var(--b1); stroke-width:1; }
+.asm-map-svg .tickLbl { fill:var(--dim); font-size:9px; }
+.asm-map-svg .varMark { stroke:var(--coral); stroke-width:2; }
+.asm-map-svg .tileF { fill:rgba(0,255,176,.12); stroke:rgba(0,255,176,.55); stroke-width:1; }
+.asm-map-svg .tileR { fill:rgba(208,128,255,.12); stroke:rgba(208,128,255,.55); stroke-width:1; }
+.asm-map-svg .tileLbl { fill:var(--silver); font-size:9px; font-weight:700; }
+
+.asm-aln-wrap { margin-top:12px; display:flex; flex-direction:column; gap:10px; }
+.asm-block {
+  background:var(--ink); border:1px solid var(--b0); border-radius:8px;
+  padding:10px 10px 12px;
+}
+.asm-block-hdr {
+  display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
+  padding:2px 2px 10px;
+  border-bottom:1px solid var(--b0);
+  margin-bottom:10px;
+}
+.asm-block-title { font-family:var(--sans); font-weight:800; color:var(--white); font-size:12px; }
+.asm-block-sub { font-family:var(--dm); color:var(--slate); font-size:9px; }
+
+.aln-line { 
+  display:grid; 
+  grid-template-columns: 140px max-content; 
+  column-gap:10px; 
+  align-items:start; 
+  /* Make line as wide as needed for the sequence so the parent can scroll */
+  min-width: max-content;
+}
+.aln-label {
+  width:140px; flex-shrink:0;
+  font-family:var(--dm); font-size:9px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--slate);
+  padding-top:2px;
+}
+.aln-label.tile { color:var(--mist); letter-spacing:0; text-transform:none; font-size:10px; }
+.aln-seq {
+  /* Do NOT flex-shrink; keep intrinsic width so scrolling works */
+  display:inline-block;
+  width: max-content;
+  font-family:var(--dm);
+  font-size:11px;
+  color:var(--mist);
+  white-space:pre;
+  line-height:1.55;
+}
+.aln-seq .aln-ov { background:rgba(80,200,255,.10); box-shadow:0 0 0 1px rgba(80,200,255,.16) inset; border-radius:3px; padding:0; }
+.aln-seq .aln-mut { color:var(--gold); text-shadow:0 0 10px rgba(255,208,96,.15); }
+.aln-seq .aln-mut.aln-ov { background:rgba(255,208,96,.10); box-shadow:0 0 0 1px rgba(255,208,96,.20) inset; }
+
+/* Reference vs output windows in Assembly Preview */
+.asm-refwin{
+  background:#e5e7eb; /* stronger grey */
+  border:1px solid var(--b1);
+  border-radius:10px;
+  padding:12px 12px;
+  max-width:100%;
+  overflow-x:hidden; overflow-y:hidden;
+  box-sizing:border-box;
+}
+.asm-outwin{
+  background:#ffffff;
+  border:1px solid var(--b1);
+  border-radius:10px;
+  padding:12px 12px;
+  max-width:100%;
+  overflow-x:hidden; overflow-y:hidden;
+  box-sizing:border-box;
+}
+
+/* Hide native horizontal scrollbars in the panes (shared scrollbar below controls both) */
+.asm-refwin, .asm-outwin{
+  scrollbar-width: none; /* Firefox */
+}
+.asm-refwin::-webkit-scrollbar, .asm-outwin::-webkit-scrollbar{
+  height: 0px;
+}
+
+.asm-block .aln-seq{
+  font-family:var(--dm);
+  font-weight:600; /* keep consistent widths */
+  font-variant-ligatures:none;
+}
+.aln-refblock .aln-seq{ font-weight:600; }
+
+
+/* Reference tracks block (WT DNA / codons / AA / variants) */
+\.aln-refblock{
+  background: transparent;
+  border:1px solid var(--b0);
+  border-radius:8px;
+  padding:8px 10px;
+  margin-bottom:10px;
+}
+.aln-refblock .aln-line{ padding:2px 0; }
+.aln-refblock .aln-label{ color:var(--slate); font-weight:700; }
+.aln-refblock .aln-line.wt-dna .aln-seq{
+  font-weight:700;
+  color:var(--white);
+}
+
+/* Clickable AA selector cells inside Assembly Viewer */
+.aln-seq .sel-aa{
+  display:inline-block;
+  width:3ch;
+  text-align:center;
+  cursor:pointer;
+  user-select:none;
+  border-radius:3px;
+  transition:background .08s, box-shadow .08s, color .08s;
+}
+.aln-seq .sel-aa:hover{ background:rgba(15,118,110,.08); }
+.aln-seq .sel-aa.has-vars{ background:rgba(15,118,110,.06); box-shadow:0 0 0 1px rgba(15,118,110,.22) inset; }
+.aln-seq .sel-aa.wt-excl{ color:var(--coral); }
+.aln-seq .sel-aa.active{ background:rgba(15,118,110,.12); box-shadow:0 0 0 1px rgba(15,118,110,.55) inset; }
+
+.aln-legend { font-family:var(--dm); font-size:9px; color:var(--slate); margin-top:8px; line-height:1.7; }
+
+.aln-line.pair .aln-label { color:var(--sky); }
+.aln-line.pair .aln-seq { color:var(--sky); }
+
+
+
+
+/* v10: confine preview windows to viewport width and scroll horizontally inside */
+html, body { max-width: 100%; overflow-x: hidden; }
+#assemblyPreview, .assemblyPreview, #assemblyPreviewContainer { max-width: 100%; }
+.previewWindow, .previewWindow { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
+.previewWindow pre, .previewWindow pre { white-space: pre; display: inline-block; min-width: max-content; }
+.refWindow, .refWindow { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
+.refWindow pre, .refWindow pre { white-space: pre; display: inline-block; min-width: max-content; }
+/* ensure any alignment blocks don't expand the page */
+.alnBlock, .aln-block, .alignmentBlock { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
+
+
+/* Scrollbar: thicker and easier to grab (WebKit/Blink) */
+.asm-refwin::-webkit-scrollbar,
+.asm-outwin::-webkit-scrollbar{
+  height: 16px;
+}
+.asm-refwin::-webkit-scrollbar-track,
+.asm-outwin::-webkit-scrollbar-track{
+  background: rgba(17,24,39,0.08);
+  border-radius: 999px;
+}
+.asm-refwin::-webkit-scrollbar-thumb,
+.asm-outwin::-webkit-scrollbar-thumb{
+  background: rgba(75,85,99,0.55);
+  border-radius: 999px;
+  border: 4px solid transparent;
+  background-clip: content-box;
+}
+.asm-refwin::-webkit-scrollbar-thumb:hover,
+.asm-outwin::-webkit-scrollbar-thumb:hover{
+  background: rgba(75,85,99,0.75);
+  border: 4px solid transparent;
+  background-clip: content-box;
+}
+
+/* Use a single visible scrollbar: hide the one on the reference window (still scrolls via wheel/trackpad) */
+.asm-refwin{ scrollbar-width: none; } /* Firefox */
+.asm-refwin::-webkit-scrollbar{ height: 0px; } /* WebKit */
+
+/* Prevent flex children from overflowing their container */
+.asm-refwin, .asm-outwin { min-width: 0; }
+
+
+/* ── Shared horizontal scrollbar (always visible) ───────────────────────── */
+.shared-scroll-wrap{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:8px 12px 0 12px;
+}
+#sharedScrollBar{
+  width:100%;
+  max-width:100%;
+  height:20px;
+  overflow-x:scroll !important;
+  overflow-y:hidden !important;
+  background:#f3f4f6;
+  border:1px solid var(--b1);
+  border-radius:10px;
+  box-sizing:border-box;
+  scrollbar-gutter: stable both-edges;
+}
+#sharedScrollPad{ height:1px; } /* width set in JS */
+#sharedScrollBar::-webkit-scrollbar{ height:16px; }
+#sharedScrollBar::-webkit-scrollbar-thumb{ background:#94a3b8; border-radius:10px; }
+#sharedScrollBar::-webkit-scrollbar-track{ background:#e5e7eb; border-radius:10px; }
+
+#sharedScrollRange{
+  width:100%;
+  accent-color: var(--accent);
+}
+
+/* Make the two panes scrollable but hide their own scrollbars (shared bar drives them) */
+.asm-refwin, .asm-outwin{
+  overflow-x:auto !important;
+  overflow-y:hidden !important;
+  max-width:100% !important;
+}
+.asm-refwin::-webkit-scrollbar, .asm-outwin::-webkit-scrollbar{ height:0px; }
+.asm-refwin{ scrollbar-width:none; }
+.asm-outwin{ scrollbar-width:none; }
+
+/* Critical flex fix so long alignment lines don't force the panel wider */
+.preview-scroll, #preview-aln, .asm-block, .asm-refwin, .asm-outwin { min-width:0; }
+.aln-line{ min-width:0; }
+.aln-seq{ display:inline-block; min-width:max-content; }
+
+/* ===== v18 overrides: fix seq box sizing + guaranteed horizontal scrolling ===== */
+.input-row{ display:flex; gap:10px; align-items:stretch; flex-wrap:nowrap; }
+.seq-input{
+  flex:1 1 auto;
+  min-width: 420px;
+  width: 100%;
+  min-height: 120px;
+  height: 120px;
+  resize: vertical;
+  box-sizing: border-box;
+  white-space: pre-wrap;
+  overflow: auto;
+  line-height: 1.4;
+}
+.seq-right{ flex:0 0 auto; align-self:stretch; }
+
+.preview-panel, .asm-refwin, .asm-outwin{ width:100%; max-width:100%; box-sizing:border-box; }
+.asm-refwin, .asm-outwin{ overflow-x:auto !important; overflow-y:hidden !important; }
+
+#shared-scroll-wrap{ width:100%; max-width:100%; }
+#sharedScrollBar{
+  width:100%;
+  max-width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  box-sizing:border-box;
+  border:1px solid var(--b0);
+  border-radius:10px;
+  background:#f8fafc;
+}
+/* Thicker scrollbar */
+#sharedScrollBar::-webkit-scrollbar{ height:18px; }
+#sharedScrollBar::-webkit-scrollbar-thumb{ background:#64748b; border-radius:10px; }
+#sharedScrollBar::-webkit-scrollbar-track{ background:#e2e8f0; border-radius:10px; }
+/* Always show a usable thumb by ensuring pad has min width */
+#sharedScrollPad{ height:1px; min-width: 150%; }
+
+
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ══════════════════════════════════════
+     HEADER
+══════════════════════════════════════ -->
+<header class="hdr">
+  <div>
+    <div class="eyebrow">Variant // Combinatorics</div>
+    <h1 class="title">Protein Variant & Combinatorial Library Designer</h1>
+    <p class="subtitle">Click WT amino acids in the Assembly Viewer to choose diversity → click RUN → expand outputs only when needed</p>
+  </div>
+  <div class="codon-scheme-wrap">
+    <span class="codon-scheme-lbl">Codon table</span>
+    <select class="codon-scheme-sel" id="codon-scheme" onchange="onCodonSchemeChange()">
+      <option value="human">Homo sapiens (human)</option>
+      <option value="ecoli">E. coli K12</option>
+      <option value="yeast">S. cerevisiae (yeast)</option>
+      <option value="mouse">Mus musculus (mouse)</option>
+      <option value="optimal">Fully optimal (highest CAI)</option>
+    </select>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════
+     SEQUENCE INPUT
+══════════════════════════════════════ -->
+<section class="input-section">
+  <span class="sec-label">DNA Coding Sequence (5′→3′ sense strand, multiples of 3 nt)</span>
+  <div class="input-row">
+    <span class="five-badge">5′ →</span>
+    <textarea id="seq-in" class="seq-input" rows="5"
+      placeholder="Paste or type coding sequence… e.g.  ATG GAA AAG GAT GCA GGT CGT TGG CAT GGC AAC CTG TAC GAC TTC"
+    >ATG GAA AAG GAT GCA GGT CGT TGG CAT GGC AAC CTG TAC GAC TTC</textarea>
+    <div class="seq-right">
+      <div class="seq-stats" id="seq-stats"></div>
+      <button class="clear-btn" onclick="clearAll()">✕ Reset</button>
+    </div>
+  </div>
+</section>
+
+
+
+<!-- ══════════════════════════════════════
+     LIBRARY GENERATOR (choose mutations above, then RUN)
+══════════════════════════════════════ -->
+<section class="libgen-section" id="libgen-section">
+  <div class="libgen-panel">
+    <div class="panel-hdr">
+      <div class="panel-title">Library Generator</div>
+      <div id="run-hint" class="run-hint" style="display:none">pending changes — click RUN</div>
+      <button class="undo-btn" id="undo-btn" onclick="undoStep()" title="Undo the last change (sequence, variants, or parameters)">↶ Undo</button>
+      <button class="run-btn" id="run-btn" onclick="runDesign()" title="Recalculate oligos, assembly preview, and (optional) combinations">RUN ▶</button>
+    </div>
+
+    <div class="oligo-controls">
+      <span class="ctrl-lbl">Mode</span>
+      <select class="ctrl-sel" id="oligo-mode" onchange="onOligoModeChange(this.value)">
+        <option value="mutagenic">Mutagenic (single-site)</option>
+        <option value="assembly" selected>Assembly (overlap extension)</option>
+      </select>
+
+      <div id="mut-controls" class="ctrl-group" style="display:none">
+        <span class="ctrl-lbl">Flank</span>
+        <input type="number" class="ctrl-inp" id="flank-inp" min="5" max="80" value="20" oninput="onFlankChange(this.value)">
+        <span class="ctrl-lbl">nt/side</span>
+      </div>
+
+      <div id="asm-controls" class="ctrl-group">
+        <span class="ctrl-lbl">Oligo</span>
+        <input type="number" class="ctrl-inp" id="asm-len" min="60" max="200" value="120" oninput="onAsmParamChange()">
+        <span class="ctrl-lbl">nt</span>
+
+        <span class="ctrl-lbl">Overlap</span>
+        <input type="number" class="ctrl-inp" id="asm-ov-min" min="12" max="80" value="25" oninput="onAsmParamChange()">
+        <span class="ctrl-lbl">–</span>
+        <input type="number" class="ctrl-inp" id="asm-ov-max" min="12" max="120" value="45" oninput="onAsmParamChange()">
+        <span class="ctrl-lbl">nt</span>
+
+        <span class="ctrl-lbl">Tm≥</span>
+        <input type="number" class="ctrl-inp" id="asm-tm" min="45" max="80" value="60" oninput="onAsmParamChange()">
+        <span class="ctrl-lbl">°C</span>
+
+        <span class="ctrl-lbl">Start</span>
+        <select class="ctrl-sel" id="asm-start" onchange="onAsmParamChange()">
+          <option value="auto">Auto</option>
+          <option value="F">Forward</option>
+          <option value="R">Reverse</option>
+        </select>
+
+        <label class="ctrl-chk" title="Keep oligo boundaries and overlaps in multiples of 3 nt (codon frame)">
+          <input type="checkbox" id="asm-frame3" checked onchange="onAsmParamChange()"> in-frame (×3)
+        </label>
+
+        <label class="ctrl-chk" title="Recommended: place all variant codons in single-stranded 'gap' regions, not in overlaps, so you don't need complementary degenerate overlaps">
+          <input type="checkbox" id="asm-avoid-var" checked onchange="onAsmParamChange()"> variants NOT in overlaps
+        </label>
+
+        <span class="ctrl-pill" title="WT inclusion is controlled per-position (toggle WT in the dropdown)">WT per-position</span>
+
+        <span id="asm-warn" class="ctrl-pill warn" style="display:none">adjust params</span>
+      </div>
+
+      <button class="ctrl-copy-all" onclick="copyAllOligos()">⎘ Copy All Oligos</button>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     ASSEMBLY PREVIEW (before PCR)
+══════════════════════════════════════ -->
+<section class="preview-section" id="preview-section" style="display:none">
+  <div class="preview-panel">
+    <div class="panel-hdr">
+      <div class="panel-title">Assembly Preview (before PCR)</div>
+      <div id="preview-badge-wrap"></div>
+      
+    <div class="shared-scroll-wrap" id="shared-scroll-wrap" style="display:none">
+      <div id="sharedScrollBar" aria-label="Horizontal scroll (shared)">
+        <div id="sharedScrollPad"></div>
+      </div>
+      <input id="sharedScrollRange" type="range" min="0" max="0" value="0" step="1" />
+    </div>
+
+<div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="exp-btn" onclick="copyAssemblyPreview()">⎘ Copy preview</button>
+        <button class="exp-btn" onclick="exportAssemblyPreviewTxt()">⬇ Preview (.txt)</button>
+      </div>
+    </div>
+
+    <div class="preview-controls">
+<span class="ctrl-lbl">View</span>
+      <select class="ctrl-sel" id="preview-view" onchange="renderAssemblyPreview()">
+        <option value="duplex" selected>duplex</option>
+        <option value="tiles">tiles</option>
+      </select>
+
+      <label class="ctrl-chk" title="Show oligo tiling map (arrows + overlaps + variant marks)">
+        <input type="checkbox" id="preview-show-map" checked onchange="renderAssemblyPreview()"> map
+      </label>
+
+      <label class="ctrl-chk" title="Show WT DNA codons line in the alignment view">
+        <input type="checkbox" id="preview-show-dna" checked onchange="renderAssemblyPreview()"> WT DNA
+      </label>
+
+      <label class="ctrl-chk" title="Show degenerate codon patterns (IUPAC) at variant sites">
+        <input type="checkbox" id="preview-show-deg" checked onchange="renderAssemblyPreview()"> deg codons
+      </label>
+
+      <span class="ctrl-pill" style="margin-left:auto;">Legend: <span style="color:var(--sky);font-weight:700">overlap</span> · <span style="color:var(--gold);font-weight:700">degenerate</span></span>
+    </div>
+
+    <div class="preview-scroll" id="preview-scroll">
+      <div id="preview-map"></div>
+      <div id="preview-aln"></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════
+     COLLAPSIBLE OUTPUTS
+══════════════════════════════════════ -->
+<div class="main-grid">
+
+  <!-- ── OLIGOS PANEL ───────────────────── -->
+  <div class="oligos-panel" id="oligos-panel">
+    <div class="panel-hdr">
+      <div class="panel-title">Oligonucleotides to Order</div>
+      <div id="oligo-badge-wrap"></div>
+      <button class="panel-toggle" id="oligo-toggle" onclick="toggleOligosPanel()" title="Expand oligos">▸</button>
+    </div>
+    <div class="collapsed-note" id="oligos-collapsed-note">Oligos panel collapsed. Click the arrow to expand.</div>
+    <div class="oligos-scroll" id="oligos-scroll">
+      <div class="combos-empty">
+        <div class="empty-icon">🧫</div>
+        <div class="empty-txt" style="font-size:10px;">
+          One mutagenic oligo per<br>
+          position × substitution.<br><br>
+          Combine in separate reactions<br>
+          to create each combination.
+        </div>
+      </div>
+    </div>
+    <div class="export-bar" id="oligo-export" style="display:none">
+      <button class="exp-btn primary" onclick="exportOligosTxt()">⬇ Export Oligos (.txt)</button>
+      <button class="exp-btn" onclick="exportOligosCsv()">⬇ Oligos (.csv)</button>
+    </div>
+  </div>
+
+<!-- ── COMBINATIONS PANEL ────────────── -->
+  <div class="combos-panel" id="combos-panel">
+    <div class="panel-hdr">
+      <div class="panel-title">All Variant Combinations</div>
+      <div id="combo-badge-wrap"></div>
+      <div id="combo-complexity" style="font-size:9px;color:var(--slate);font-family:var(--dm);margin-left:auto;"></div>
+      <button class="panel-toggle" id="combo-toggle" onclick="toggleCombosPanel()" title="Collapse combinations">▾</button>
+    </div>
+    <div class="collapsed-note" id="combos-collapsed-note">Combinations panel collapsed. Click the arrow to expand.</div>
+    <div class="combos-empty" id="combos-empty">
+      <div class="empty-icon">🔬</div>
+      <div class="empty-txt">
+        Click any WT amino acid letter in the Assembly Viewer<br>
+        to select substitutions from the dropdown.<br><br>
+        All combinations will appear here<br>
+        with their full DNA sequences.
+      </div>
+    </div>
+    <div class="combos-scroll" id="combos-scroll" style="display:none">
+      <table class="combo-tbl" id="combo-tbl"></table>
+    </div>
+    <div class="export-bar" id="combo-export" style="display:none">
+      <button class="exp-btn primary" onclick="exportFasta()">⬇ Export FASTA</button>
+      <button class="exp-btn" onclick="exportComboCsv()">⬇ Export CSV</button>
+      <button class="exp-btn" onclick="copyAllDNA()">⎘ Copy All DNA</button>
+    </div>
+  </div>
+
+  </div><!-- /main-grid -->
+
+
+<!-- ══════════════════════════════════════
+     DROPDOWN (appended to body, positioned dynamically)
+══════════════════════════════════════ -->
+<div id="dropdown" class="aa-dropdown" style="display:none;position:fixed;"></div>
+
+</div><!-- /app -->
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════════
+   GENETIC CODE & DATA
+═══════════════════════════════════════════════ */
+const GC = {
+  TTT:"F",TTC:"F",TTA:"L",TTG:"L",
+  CTT:"L",CTC:"L",CTA:"L",CTG:"L",
+  ATT:"I",ATC:"I",ATA:"I",ATG:"M",
+  GTT:"V",GTC:"V",GTA:"V",GTG:"V",
+  TCT:"S",TCC:"S",TCA:"S",TCG:"S",
+  CCT:"P",CCC:"P",CCA:"P",CCG:"P",
+  ACT:"T",ACC:"T",ACA:"T",ACG:"T",
+  GCT:"A",GCC:"A",GCA:"A",GCG:"A",
+  TAT:"Y",TAC:"Y",TAA:"*",TAG:"*",
+  CAT:"H",CAC:"H",CAA:"Q",CAG:"Q",
+  AAT:"N",AAC:"N",AAA:"K",AAG:"K",
+  GAT:"D",GAC:"D",GAA:"E",GAG:"E",
+  TGT:"C",TGC:"C",TGA:"*",TGG:"W",
+  CGT:"R",CGC:"R",CGA:"R",CGG:"R",
+  AGT:"S",AGC:"S",AGA:"R",AGG:"R",
+  GGT:"G",GGC:"G",GGA:"G",GGG:"G",
+};
+
+const AA_FULL = {
+  A:"Alanine",R:"Arginine",N:"Asparagine",D:"Aspartate",C:"Cysteine",
+  E:"Glutamate",Q:"Glutamine",G:"Glycine",H:"Histidine",I:"Isoleucine",
+  L:"Leucine",K:"Lysine",M:"Methionine",F:"Phenylalanine",P:"Proline",
+  S:"Serine",T:"Threonine",W:"Tryptophan",Y:"Tyrosine",V:"Valine","*":"Stop",
+};
+
+/* Preferred codons per species — most frequently used codon per AA */
+const CODON_PREFS = {
+  human:   {A:"GCC",R:"AGG",N:"AAC",D:"GAC",C:"TGC",E:"GAG",Q:"CAG",G:"GGC",H:"CAC",I:"ATC",L:"CTG",K:"AAG",M:"ATG",F:"TTC",P:"CCC",S:"AGC",T:"ACC",W:"TGG",Y:"TAC",V:"GTG"},
+  ecoli:   {A:"GCG",R:"CGT",N:"AAC",D:"GAT",C:"TGC",E:"GAA",Q:"CAG",G:"GGC",H:"CAT",I:"ATT",L:"CTG",K:"AAA",M:"ATG",F:"TTT",P:"CCG",S:"AGC",T:"ACC",W:"TGG",Y:"TAT",V:"GTG"},
+  yeast:   {A:"GCT",R:"AGA",N:"AAT",D:"GAT",C:"TGT",E:"GAA",Q:"CAA",G:"GGT",H:"CAT",I:"ATT",L:"TTG",K:"AAA",M:"ATG",F:"TTT",P:"CCA",S:"TCT",T:"ACT",W:"TGG",Y:"TAT",V:"GTT"},
+  mouse:   {A:"GCC",R:"AGG",N:"AAC",D:"GAC",C:"TGC",E:"GAG",Q:"CAG",G:"GGC",H:"CAC",I:"ATC",L:"CTG",K:"AAG",M:"ATG",F:"TTC",P:"CCC",S:"AGC",T:"ACC",W:"TGG",Y:"TAC",V:"GTG"},
+  optimal: {A:"GCG",R:"CGC",N:"AAC",D:"GAC",C:"TGC",E:"GAG",Q:"CAG",G:"GGC",H:"CAC",I:"ATC",L:"CTG",K:"AAG",M:"ATG",F:"TTC",P:"CCG",S:"AGC",T:"ACC",W:"TGG",Y:"TAC",V:"GTG"},
+};
+
+const AA_GROUPS = [
+  {name:"Nonpolar",    color:"#c080ff", rgb:"192,128,255", aas:["G","A","V","L","I","P","F","M","W"]},
+  {name:"Polar",       color:"#00ffb0", rgb:"0,255,176",   aas:["S","T","C","Y","N","Q"]},
+  {name:"(+) Charged", color:"#50c8ff", rgb:"80,200,255",  aas:["K","R","H"]},
+  {name:"(−) Charged", color:"#ff90aa", rgb:"255,144,170", aas:["D","E"]},
+];
+const ALL_AAS = AA_GROUPS.flatMap(g=>g.aas);
+
+function aaColor(aa) {
+  if(aa==="M") return {color:"#ffd060",rgb:"255,208,96"};
+  if(aa==="*") return {color:"#ff6070",rgb:"255,96,112"};
+  for(const g of AA_GROUPS) if(g.aas.includes(aa)) return {color:g.color,rgb:g.rgb};
+  return {color:"#4a7d9e",rgb:"74,125,158"};
+}
+
+const COMP = {A:"T",T:"A",G:"C",C:"G"};
+const revComp = s => s.split("").reverse().map(b=>COMP[b]||b).join("");
+
+function calcTm(seq) {
+  const s=seq.toUpperCase().replace(/[^ATGC]/g,"");
+  let gc=0; for(const b of s) gc+=(b==="G"||b==="C"?1:0);
+  const at=s.length-gc;
+  const tm=s.length<14?(2*at+4*gc):(64.9+41*(gc-16.4)/(gc+at));
+  return tm.toFixed(1);
+}
+
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+let codons    = [];    // array of 3-nt strings
+let protein   = [];    // array of single-letter AA
+let varMap    = {};    // {posIndex: Set<AA>}  — selected substitution AAs per position
+let wtIncludeMap = {}; // {posIndex: boolean} — if false, WT AA is excluded at that position
+let needsRun = false;   // changes pending until RUN is clicked
+let oligosCollapsed = true; // collapses the “Oligonucleotides to Order” panel
+let flankLen  = 20;
+let codonScheme = "human";
+let activeDropdownPos = null;  // which position has dropdown open
+let activeDropdownAnchor = null;
+
+// ──────────────────────────────────────────────
+// Simple one-step (multi-step) UNDO support
+// Captures sequence + variant selections + key params.
+// ──────────────────────────────────────────────
+const HISTORY_MAX = 40;
+let historyStack = [];
+let isRestoringState = false;
+let lastSeqInputValue = ""; // raw textarea value, for sequence-change undo snapshots
+
+function serializeVarMap(vm){
+  const out = {};
+  for(const [k,v] of Object.entries(vm||{})){
+    out[k] = Array.from(v||[]);
+  }
+  return out;
+}
+function deserializeVarMap(obj){
+  const out = {};
+  for(const [k,arr] of Object.entries(obj||{})){
+    const n = parseInt(k);
+    if(!Number.isFinite(n)) continue;
+    out[n] = new Set(Array.isArray(arr)?arr:[]);
+  }
+  return out;
+}
+
+function snapshotState(seqOverride){
+  const seq = (seqOverride!==undefined) ? seqOverride : (document.getElementById("seq-in")?.value ?? "");
+  return {
+    seq,
+    codonScheme,
+    oligoMode,
+    flankLen,
+    asmParams: {...asmParams},
+    varMap: serializeVarMap(varMap),
+    wtIncludeMap: {...wtIncludeMap},
+    oligosCollapsed,
+    combosCollapsed
+  };
+}
+
+function pushHistory(seqOverride){
+  if(isRestoringState) return;
+  const snap = snapshotState(seqOverride);
+  // Avoid stacking identical consecutive snapshots
+  const prev = historyStack.length ? historyStack[historyStack.length-1] : null;
+  try{
+    if(prev && JSON.stringify(prev)===JSON.stringify(snap)) return;
+  }catch{}
+  historyStack.push(snap);
+  if(historyStack.length>HISTORY_MAX) historyStack.shift();
+  updateUndoUI();
+}
+
+function updateUndoUI(){
+  const btn = document.getElementById("undo-btn");
+  if(!btn) return;
+  btn.disabled = historyStack.length===0;
+}
+
+function applyStateToControls(){
+  // Codon scheme + mode
+  const cs = document.getElementById("codon-scheme");
+  if(cs) cs.value = codonScheme;
+
+  const modeSel = document.getElementById("oligo-mode");
+  if(modeSel) modeSel.value = oligoMode;
+
+  // Flank (mutagenic mode control)
+  const fin = document.getElementById("flank-inp");
+  if(fin) fin.value = String(flankLen);
+
+  // Assembly controls
+  const aLen = document.getElementById("asm-len"); if(aLen) aLen.value = String(asmParams.oligoLen);
+  const aMin = document.getElementById("asm-ov-min"); if(aMin) aMin.value = String(asmParams.overlapMin);
+  const aMax = document.getElementById("asm-ov-max"); if(aMax) aMax.value = String(asmParams.overlapMax);
+  const aTm  = document.getElementById("asm-tm"); if(aTm) aTm.value = String(asmParams.overlapTm);
+  const aSt  = document.getElementById("asm-start"); if(aSt) aSt.value = String(asmParams.start);
+  const aF3  = document.getElementById("asm-frame3"); if(aF3) aF3.checked = !!asmParams.frame3;
+  const aAv  = document.getElementById("asm-avoid-var"); if(aAv) aAv.checked = !!asmParams.avoidVarOverlap;
+
+  // Collapsible outputs
+  applyOligosCollapsed();
+  applyCombosCollapsed();
+
+  onOligoModeChange(oligoMode); // ensures correct control visibility
+}
+
+function restoreState(snap){
+  if(!snap) return;
+  isRestoringState = true;
+
+  // Restore raw sequence text
+  const seqEl = document.getElementById("seq-in");
+  if(seqEl) seqEl.value = snap.seq ?? "";
+
+  // Restore globals
+  codonScheme = snap.codonScheme || "human";
+  oligoMode = snap.oligoMode || "assembly";
+  flankLen = Number.isFinite(snap.flankLen) ? snap.flankLen : 20;
+  asmParams = {...asmParams, ...(snap.asmParams||{})};
+  varMap = deserializeVarMap(snap.varMap||{});
+  wtIncludeMap = {...(snap.wtIncludeMap||{})};
+  oligosCollapsed = !!snap.oligosCollapsed;
+  combosCollapsed = !!snap.combosCollapsed;
+
+  // Re-parse sequence -> codons/protein
+  codons = parseCodons(document.getElementById("seq-in")?.value ?? "");
+  protein = codons.map(c=>GC[c]||"?");
+
+  // Ensure any selections out of range are dropped
+  const nAA = protein.length;
+  for(const k of Object.keys(varMap)){
+    const p = parseInt(k);
+    if(!Number.isFinite(p) || p<0 || p>=nAA) delete varMap[k];
+  }
+  for(const k of Object.keys(wtIncludeMap)){
+    const p = parseInt(k);
+    if(!Number.isFinite(p) || p<0 || p>=nAA) delete wtIncludeMap[k];
+  }
+
+  closeDropdown();
+  asmPlanCache = null;
+
+  // We restored state; recompute outputs immediately (no need to re-paste/re-click)
+  needsRun = true;
+  updateRunUI();
+  applyStateToControls();
+  renderSelection();
+  runDesign(); // computes + renders
+  lastSeqInputValue = (document.getElementById("seq-in")?.value ?? "");
+
+  isRestoringState = false;
+  updateUndoUI();
+}
+
+function undoStep(){
+  if(!historyStack.length) return;
+  const snap = historyStack.pop();
+  restoreState(snap);
+}
+
+ // element to anchor dropdown (AA cell in assembly viewer)
+
+
+// UI state
+let combosCollapsed = false; // collapses the “All Variant Combinations” panel
+
+// Oligo output mode
+let oligoMode = "assembly";   // "mutagenic" | "assembly"
+
+// Assembly (overlap-extension) params
+let asmParams = {
+  oligoLen: 120,          // target oligo length (nt)
+  overlapMin: 25,         // min overlap length (nt)
+  overlapMax: 45,         // max overlap length (nt)
+  overlapTm: 60,          // overlap Tm threshold (°C)
+  frame3: true,           // keep boundaries and overlaps multiples of 3 nt
+  avoidVarOverlap: true,  // keep variant codons out of overlaps
+  // WT inclusion is controlled per-position (toggle WT in the dropdown)
+  start: "auto",          // "auto" | "F" | "R"
+  lenSlack: 20,           // +/- nt search slack around oligoLen
+  overlapTarget: 35,      // preferred overlap length (for scoring)
+  preferVariantsOnForward: true, // scoring bias only
+};
+
+let asmPlanCache = null; // computed assembly oligos (cached for copy/export)
+
+/* ═══════════════════════════════════════════════
+   SEQUENCE PARSING
+═══════════════════════════════════════════════ */
+function parseCodons(raw) {
+  const clean = raw.toUpperCase().replace(/[^ATGC]/g,"");
+  const out=[];
+  for(let i=0;i+3<=clean.length;i+=3) {
+    const c=clean.slice(i,i+3);
+    if(/^[ATGC]{3}$/.test(c)) out.push(c);
+  }
+  return out;
+}
+
+/* ═══════════════════════════════════════════════
+   GET BEST CODON FOR AA
+═══════════════════════════════════════════════ */
+function bestCodon(aa) {
+  const prefs = CODON_PREFS[codonScheme];
+  return prefs[aa] || Object.entries(GC).find(([c,a])=>a===aa)?.[0] || "NNN";
+}
+
+/* ═══════════════════════════════════════════════
+   COMBINATIONS ENGINE
+═══════════════════════════════════════════════ */
+function enumerateCombinations() {
+  // Build list of [pos, [wtAA, ...altAAs]] for each position that has variants
+  const positions = Object.keys(varMap)
+    .map(Number)
+    .filter(p=>varMap[p].size>0)
+    .sort((a,b)=>a-b);
+
+  if(!positions.length) return [{muts:[], label:"WT", isWT:true}];
+
+  // Each position contributes (optionally) WT + selected variants
+  const options = positions.map(p=>{
+    const alts=[...varMap[p]];
+    const wtAllowed = (wtIncludeMap[p]!==false);
+    const choices = [];
+    if(wtAllowed) choices.push(null); // null = WT at this position
+    for(const a of alts) choices.push(a);
+    return {pos:p, choices};
+  });
+
+  // Cartesian product
+  let combos = [[]];
+  for(const opt of options) {
+    const next=[];
+    for(const existing of combos) {
+      for(const choice of opt.choices) {
+        next.push([...existing, {pos:opt.pos, aa:choice}]);
+      }
+    }
+    combos=next;
+  }
+
+  return combos.map(combo=>{
+    const muts = combo.filter(m=>m.aa!==null); // non-WT changes
+    const isWT = muts.length===0;
+    const label = isWT ? "WT" : muts.map(m=>`${protein[m.pos]}${m.pos+1}${m.aa}`).join("_");
+    return {muts, label, isWT};
+  });
+}
+
+/* Build full DNA for a given combo */
+function buildDNA(combo) {
+  const overrides = {}; // pos -> codon
+  for(const m of combo.muts) overrides[m.pos] = bestCodon(m.aa);
+  return codons.map((c,i)=>overrides[i]||c).join("");
+}
+
+/* Build full protein for a given combo */
+function buildProtein(combo) {
+  const overrides = {};
+  for(const m of combo.muts) overrides[m.pos] = m.aa;
+  return protein.map((aa,i)=>overrides[i]||aa).join("");
+}
+
+/* ═══════════════════════════════════════════════
+   OLIGO DESIGN
+═══════════════════════════════════════════════ */
+function designOligo(pos, newAA) {
+  const newCodon = bestCodon(newAA);
+  const fullDna  = codons.join("");
+  const start    = pos*3;
+  const lStart   = Math.max(0, start-flankLen);
+  const rEnd     = Math.min(fullDna.length, start+3+flankLen);
+  const left     = fullDna.slice(lStart, start);
+  const right    = fullDna.slice(start+3, rEnd);
+  const sense    = left.toLowerCase() + newCodon.toUpperCase() + right.toLowerCase();
+  const anti     = revComp(sense);
+  return {sense, anti, newCodon, left, right, length:sense.length};
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER — PROTEIN VIEWER
+═══════════════════════════════════════════════ */
+function renderViewer() {
+  const strip = document.getElementById("pos-strip");
+  const stats = document.getElementById("seq-stats");
+
+  if(!codons.length) {
+    strip.innerHTML=`<div style="color:var(--dim);font-size:11px;padding:20px;">Enter a coding sequence above to begin.</div>`;
+    stats.innerHTML=""; return;
+  }
+
+  stats.innerHTML=`${protein.length} residues<br>${codons.length*3} nt`;
+
+  strip.innerHTML = codons.map((c,i)=>{
+    const aa=protein[i]||"?";
+    const {color,rgb}=aaColor(aa);
+    const vars=[...(varMap[i]||new Set())];
+    const wtExcluded = (wtIncludeMap[i]===false);
+    const hasVars = (vars.length>0) || wtExcluded;
+    const isActive=activeDropdownPos===i;
+
+    const wtPill = wtExcluded
+      ? `<span class="var-pill" style="color:var(--coral);border-color:rgba(220,38,38,.35);background:rgba(220,38,38,.06);"
+          title="WT excluded (forced mutation at this position)"
+          onclick="toggleWTIncludeFromPill(event,${i})">WT×</span>`
+      : "";
+
+    const pills = wtPill + vars.map(v=>{
+      const {color:vc,rgb:vr}=aaColor(v);
+      return `<span class="var-pill" style="color:${vc};border-color:rgba(${vr},.4);background:rgba(${vr},.1);"
+        onclick="removeVariant(event,${i},'${v}')">${v}✕</span>`;
+    }).join("");
+
+    return `<div class="aa-pos ${hasVars?"has-vars":""} ${isActive?"active":""}" id="aap-${i}" onclick="toggleDropdown(event,${i})">
+      <div class="aa-num">${i+1}</div>
+      <div class="aa-letter" style="color:${color};${isActive?`text-shadow:0 0 12px ${color}60`:""}">${aa}</div>
+      <div class="aa-codon" style="${hasVars?`color:${color}80`:""}">${c}</div>
+      <div class="aa-var-pills">${pills}</div>
+    </div>`;
+  }).join("");
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER — DROPDOWN
+═══════════════════════════════════════════════ */
+function renderDropdown(pos) {
+  const dd = document.getElementById("dropdown");
+  if(pos===null){dd.style.display="none";return;}
+
+  const wtAA = protein[pos];
+  const current = varMap[pos]||new Set();
+  const wtIncluded = (wtIncludeMap[pos] !== false);
+  const {color:wtColor}=aaColor(wtAA);
+
+  const groupsHtml = AA_GROUPS.map(g=>`
+    <div class="dd-group">
+      <div class="dd-group-name">${g.name}</div>
+      <div class="dd-aa-grid">${g.aas.map(aa=>{
+        const isWT = aa===wtAA;
+        const isSel = isWT ? wtIncluded : current.has(aa);
+        const {color,rgb}=aaColor(aa);
+        const cls = `dd-aa-btn ${isWT?"wt":""} ${isSel?"selected":""} ${(isWT && !wtIncluded)?"excluded":""}`;
+        const title = isWT ? `WT (parent) — click to ${wtIncluded?"exclude":"include"}` : (AA_FULL[aa]||aa);
+        return `<div class="${cls}"
+          style="${isSel?`--c:${color};--cr:${rgb}`:""}"
+          title="${title}"
+          data-aa="${aa}" data-pos="${pos}">
+          ${aa}
+        </div>`;
+      }).join("")}</div>
+    </div>`).join("");
+
+  dd.innerHTML=`
+    <div class="dd-title">Pos ${pos+1} · WT: <span style="color:${wtColor};font-weight:700">${wtAA}</span> · ${AA_FULL[wtAA]||wtAA}
+      <span style="margin-left:8px;color:var(--dim);font-weight:600">(click WT to include/exclude)</span>
+    </div>
+    <div class="dd-groups">${groupsHtml}</div>
+    <div class="dd-footer">
+      <button class="dd-clear-btn" onclick="clearPosition(${pos})">Clear</button>
+      <button class="dd-done-btn" onclick="closeDropdown()">Done ✓</button>
+    </div>`;
+
+  // Attach click handlers to aa buttons (including WT toggle)
+  dd.querySelectorAll(".dd-aa-btn").forEach(btn=>{
+    btn.addEventListener("click",e=>{
+      e.stopPropagation();
+      const aa=btn.dataset.aa;
+      const p=parseInt(btn.dataset.pos);
+      const wt = protein[p];
+      if(aa===wt) toggleWTInclude(p);
+      else toggleVariant(p,aa);
+    });
+  });
+
+  dd.style.display="block";
+  positionDropdown(pos);
+}
+
+function positionDropdown(pos) {
+  const dd=document.getElementById("dropdown");
+  if(!dd) return;
+
+  let el = (activeDropdownAnchor && document.body.contains(activeDropdownAnchor)) ? activeDropdownAnchor : null;
+  if(!el){
+    el = document.querySelector(`.sel-aa[data-pos="${pos}"]`);
+    if(el) activeDropdownAnchor = el;
+  }
+  if(!el) return;
+
+  const r=el.getBoundingClientRect();
+  const ddW=300;
+
+  let left=r.left+r.width/2-ddW/2;
+  left=Math.max(8, Math.min(left, window.innerWidth-ddW-8));
+
+  let top=r.bottom+window.scrollY+6;
+  // If dropdown would go off bottom, put above
+  if(r.bottom+350>window.innerHeight) top=r.top+window.scrollY-350-6;
+
+  dd.style.top=top+"px";
+  dd.style.left=left+"px";
+  dd.style.position="absolute";
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER — MUTATION STRIP
+═══════════════════════════════════════════════ */
+function renderMutStrip() {
+  const strip=document.getElementById("mut-strip");
+  const tags=document.getElementById("mut-tags");
+  const positions=Object.keys(varMap).map(Number).filter(p=>varMap[p]&&varMap[p].size>0).sort((a,b)=>a-b);
+
+  if(!positions.length){strip.style.display="none";return;}
+  strip.style.display="flex";
+
+  tags.innerHTML=positions.map(p=>{
+    const wtAA=protein[p];
+    const {color}=aaColor(wtAA);
+    const vars=[...varMap[p]];
+    const wtExcluded = (wtIncludeMap[p]===false);
+    const varStr=vars.map(v=>{const {color:vc}=aaColor(v);return `<span style="color:${vc}">${v}</span>`;}).join(",");
+    return `<div class="mut-tag">
+      <span class="mut-tag-pos">${p+1}</span>
+      <span class="mut-tag-arrow">·</span>
+      <span style="color:${color}">${wtAA}</span>
+      <span class="mut-tag-arrow">→</span>
+      <span class="mut-tag-aas">${varStr}</span>
+      ${wtExcluded?'<span class="mut-tag-excl" title="WT excluded at this position">WT×</span>':""}
+      <span class="mut-tag-del" onclick="clearPosition(${p})">✕</span>
+    </div>`;
+  }).join("");
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER — COMBINATIONS TABLE
+═══════════════════════════════════════════════ */
+const MAX_COMBOS_DISPLAY = 500;
+
+function renderCombinations() {
+  const empty  = document.getElementById("combos-empty");
+  const scroll = document.getElementById("combos-scroll");
+  const tbl    = document.getElementById("combo-tbl");
+  const bdgWrp = document.getElementById("combo-badge-wrap");
+  const expBar = document.getElementById("combo-export");
+  const complexity = document.getElementById("combo-complexity");
+
+  const hasMuts = Object.values(varMap).some(s=>s&&s.size>0);
+
+  if(!hasMuts||!codons.length) {
+    empty.style.display="flex"; scroll.style.display="none";
+    expBar.style.display="none"; bdgWrp.innerHTML=""; complexity.innerHTML=""; return;
+  }
+
+  if(needsRun){
+    empty.style.display="flex";
+    scroll.style.display="none";
+    expBar.style.display="none";
+    bdgWrp.innerHTML=`<div class="warn-badge">pending — click RUN</div>`;
+    complexity.innerHTML="";
+    empty.innerHTML=`<div class="empty-icon">⏳</div><div class="empty-txt" style="font-size:10px;">Pending changes.<br>Click RUN to update combinations.</div>`;
+    return;
+  }
+
+  // If the combinations panel is collapsed, avoid enumerating the full cartesian product.
+  // We still show the total count (WT + all mutants) in the header badges.
+  if(combosCollapsed){
+    const totalBI = countCombinationsBigInt();
+    const totalStr = formatBigInt(totalBI);
+    const hasWT = hasWTCombination();
+    const mutantsBI = (totalBI>0n) ? (totalBI - (hasWT ? 1n : 0n)) : 0n;
+    const mutantsStr = formatBigInt(mutantsBI);
+
+    empty.style.display="none";
+    scroll.style.display="none";
+    expBar.style.display="none";
+
+    bdgWrp.innerHTML = `<div class="count-badge">${totalStr} combination${totalBI===1n?"":"s"}</div>`;
+    complexity.innerHTML = `${totalStr} total · ${mutantsStr} mutant${mutantsBI===1n?"":"s"}`;
+
+    return;
+  }
+const allCombos = enumerateCombinations();
+  const total = allCombos.length;
+  const show  = allCombos.slice(0, MAX_COMBOS_DISPLAY);
+  const truncated = total>MAX_COMBOS_DISPLAY;
+
+  empty.style.display="none"; scroll.style.display="block";
+  expBar.style.display="flex";
+  bdgWrp.innerHTML=`<div class="count-badge">${total.toLocaleString()} combination${total!==1?"s":""}</div>
+    ${truncated?`<div class="warn-badge">Showing first ${MAX_COMBOS_DISPLAY}</div>`:""}`;
+  complexity.innerHTML=`${total.toLocaleString()} variants · ${show.filter(c=>!c.isWT).length} mutants`;
+
+  const wtDNA = codons.join("");
+  const wtProt = protein.join("");
+
+  const headerHtml=`<thead><tr>
+    <th>#</th><th>Name / Mutation(s)</th><th>Protein Sequence</th>
+    <th>DNA Sequence</th><th>Copy DNA</th>
+  </tr></thead>`;
+
+  const rows = show.map((combo,idx)=>{
+    const dna  = buildDNA(combo);
+    const prot = buildProtein(combo);
+
+    // Highlight changed positions in DNA
+    const dnaHtml = dna.split("").map((nt,k)=>{
+      const codonIdx=Math.floor(k/3);
+      const isMutPos = combo.muts.some(m=>m.pos===codonIdx);
+      return isMutPos?`<span class="mut-nt">${nt}</span>`:nt;
+    }).join("");
+
+    // Highlight changed AAs in protein
+    const aaHtml = prot.split("").map((aa,k)=>{
+      const isMutPos=combo.muts.some(m=>m.pos===k);
+      return isMutPos?`<span class="mut-aa">${aa}</span>`:aa;
+    }).join("");
+
+    // Mutation chips
+    const chips=combo.muts.map(m=>{
+      const {color,rgb}=aaColor(m.aa);
+      return `<span class="combo-mut-chip" style="color:${color};border-color:rgba(${rgb},.35);background:rgba(${rgb},.08);">${protein[m.pos]}${m.pos+1}${m.aa}</span>`;
+    }).join("");
+
+    const safeLabel = combo.label.replace(/'/g,"&#39;");
+    return `<tr class="${combo.isWT?"wt-row":""}">
+      <td style="color:var(--dim);font-size:9px;">${idx+1}</td>
+      <td>
+        <div class="combo-name ${combo.isWT?"wt":""}">${combo.label}</div>
+        ${!combo.isWT?`<div class="combo-muts" style="margin-top:4px;">${chips}</div>`:""}
+      </td>
+      <td><div class="combo-seq-aa">${aaHtml}</div></td>
+      <td><div class="combo-seq-dna">${dnaHtml}</div></td>
+      <td><button class="combo-copy" onclick="copyCombo(this,'${safeLabel}','${dna}')">copy</button></td>
+    </tr>`;
+  }).join("");
+
+  tbl.innerHTML=headerHtml+`<tbody>${rows}</tbody>`;
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER — OLIGOS PANEL
+═══════════════════════════════════════════════ */
+function renderOligos() {
+  if(!codons.length){
+    const scroll = document.getElementById("oligos-scroll");
+    const bdgWrp = document.getElementById("oligo-badge-wrap");
+    const expBar = document.getElementById("oligo-export");
+    if(scroll) scroll.innerHTML = `<div class="combos-empty"><div class="empty-icon">🧬</div><div class="empty-txt" style="font-size:10px;">Enter a coding sequence above to generate oligos.</div></div>`;
+    if(bdgWrp) bdgWrp.innerHTML="";
+    if(expBar) expBar.style.display="none";
+    return;
+  }
+
+  if(needsRun){
+    renderOligosPending();
+    return;
+  }
+
+  if(oligoMode==="assembly") { renderAssemblyOligos(); return; }
+  renderMutagenicOligos();
+}
+
+function renderOligosPending(){
+  const scroll = document.getElementById("oligos-scroll");
+  const bdgWrp = document.getElementById("oligo-badge-wrap");
+  const expBar = document.getElementById("oligo-export");
+  if(bdgWrp) bdgWrp.innerHTML = `<div class="warn-badge">pending — click RUN</div>`;
+  if(expBar) expBar.style.display="none";
+  if(scroll){
+    scroll.innerHTML = `<div class="combos-empty">
+      <div class="empty-icon">⏳</div>
+      <div class="empty-txt" style="font-size:10px;">Pending changes.<br>Click RUN to generate updated oligos.</div>
+    </div>`;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER — OLIGOS PANEL (MUTAGENIC / SDM STYLE)
+═══════════════════════════════════════════════ */
+function renderMutagenicOligos() {
+  asmPlanCache = null;
+  const scroll   = document.getElementById("oligos-scroll");
+  const bdgWrp   = document.getElementById("oligo-badge-wrap");
+  const expBar   = document.getElementById("oligo-export");
+
+  // Collect all unique (pos, newAA) pairs
+  const oligoPairs=[];
+  Object.keys(varMap).map(Number).sort((a,b)=>a-b).forEach(pos=>{
+    [...(varMap[pos]||[])].forEach(newAA=>{
+      oligoPairs.push({pos, wtAA:protein[pos], newAA});
+    });
+  });
+
+  if(!oligoPairs.length||!codons.length){
+    scroll.innerHTML=`<div class="combos-empty"><div class="empty-icon">🧫</div><div class="empty-txt" style="font-size:10px;">One mutagenic oligo per<br>position × substitution.<br><br>Combine in separate reactions<br>to create each combination.</div></div>`;
+    bdgWrp.innerHTML=""; expBar.style.display="none"; return;
+  }
+
+  bdgWrp.innerHTML=`<div class="count-badge">${oligoPairs.length} oligo${oligoPairs.length!==1?"s":""}</div>`;
+  expBar.style.display="flex";
+
+  scroll.innerHTML=oligoPairs.map(({pos,wtAA,newAA},idx)=>{
+    const o=designOligo(pos,newAA);
+    const {color,rgb}=aaColor(newAA);
+    const {color:wtColor}=aaColor(wtAA);
+    const tm=calcTm(o.sense);
+    const gc=Math.round([...o.sense.toUpperCase()].filter(b=>b==="G"||b==="C").length/o.length*100);
+    const name=`Pos${String(pos+1).padStart(3,"0")}_${wtAA}${pos+1}${newAA}`;
+
+    // Format sense: lowercase flank + UPPERCASE new codon + lowercase flank
+    const senseFormatted=`<span class="flank">${o.left.toLowerCase()}</span><span class="mut">${o.newCodon.toUpperCase()}</span><span class="flank">${o.right.toLowerCase()}</span>`;
+
+    // Rebuild anti display cleanly
+    const antiLeft  = revComp(o.right).toLowerCase();
+    const antiMid   = revComp(o.newCodon).toUpperCase();
+    const antiRight = revComp(o.left).toLowerCase();
+    const antiDisplay=`<span class="flank">${antiLeft}</span><span class="mut">${antiMid}</span><span class="flank">${antiRight}</span>`;
+
+    return `<div class="oligo-entry">
+      <div class="oligo-entry-hdr">
+        <div class="oligo-name">${name}</div>
+        <div class="oligo-change">
+          <span style="color:${wtColor}">${wtAA}</span>
+          <span style="color:var(--dim)">→</span>
+          <span style="color:${color}">${newAA}</span>
+        </div>
+        <div class="oligo-tags">
+          <div class="otag b">Pos ${pos+1}</div>
+          <div class="otag g">${o.newCodon}</div>
+          <div class="otag a">${o.length} nt</div>
+        </div>
+      </div>
+
+      <div class="oligo-seq-wrap">
+        <div class="oligo-dir">5′→3′</div>
+        <div class="oligo-seq-txt">${senseFormatted}</div>
+        <button class="oligo-copy-btn" onclick="copyTxt(this,'${o.sense}')">copy</button>
+      </div>
+      <div class="oligo-seq-wrap" style="margin-top:4px;">
+        <div class="oligo-dir">3′←5′</div>
+        <div class="oligo-seq-txt">${antiDisplay}</div>
+        <button class="oligo-copy-btn" onclick="copyTxt(this,'${o.anti}')">copy</button>
+      </div>
+
+      <div class="oligo-stats">
+        <div class="ostat">Tm: <span>~${tm}°C</span></div>
+        <div class="ostat">GC: <span>${gc}%</span></div>
+        <div class="ostat">Flank: <span>${flankLen} nt</span></div>
+        <div class="ostat">Codon: <span>${o.newCodon} (${codonScheme})</span></div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ═══════════════════════════════════════════════
+   ASSEMBLY (OVERLAP-EXTENSION) OLIGO DESIGN
+   - Tiled ~120 nt oligos, variable overlaps (Tm≥ threshold)
+   - Optionally keep overlaps in-frame (×3 nt)
+   - Optionally keep variant codons out of overlaps so only one strand carries diversity
+═══════════════════════════════════════════════ */
+
+// IUPAC ambiguity codes for degenerate oligos
+const IUPAC_BASES = {
+  A:["A"], C:["C"], G:["G"], T:["T"],
+  R:["A","G"], Y:["C","T"], S:["G","C"], W:["A","T"],
+  K:["G","T"], M:["A","C"],
+  B:["C","G","T"], D:["A","G","T"], H:["A","C","T"], V:["A","C","G"],
+  N:["A","C","G","T"],
+};
+const IUPAC_COMP = {
+  A:"T", T:"A", G:"C", C:"G",
+  R:"Y", Y:"R", S:"S", W:"W",
+  K:"M", M:"K",
+  B:"V", V:"B", D:"H", H:"D",
+  N:"N",
+};
+function revCompIupac(seq) {
+  return seq.split("").reverse().map(ch=>{
+    const u = ch.toUpperCase();
+    const c = IUPAC_COMP[u] || COMP[u] || u;
+    return (ch===u) ? c : c.toLowerCase();
+  }).join("");
+}
+
+let IUPAC_PATTERNS = null;
+
+function ensureIupacPatterns() {
+  if(IUPAC_PATTERNS) return;
+  const letters = Object.keys(IUPAC_BASES);
+  IUPAC_PATTERNS = [];
+  for(const a of letters) for(const b of letters) for(const c of letters) {
+    const pat = a+b+c;
+    const codons = [];
+    for(const x of IUPAC_BASES[a]) for(const y of IUPAC_BASES[b]) for(const z of IUPAC_BASES[c]) codons.push(x+y+z);
+    const aaSet = new Set(codons.map(cd=>GC[cd]||"?"));
+    IUPAC_PATTERNS.push({pat, codons, codonCount:codons.length, aaSet});
+  }
+}
+
+function setFrom(iter) { return new Set(iter); }
+
+function bestDegenerateCodon(desiredAAs) {
+  ensureIupacPatterns();
+  const desired = [...desiredAAs].filter(a=>a && a!=="?" );
+  const desiredSet = setFrom(desired);
+
+  // Preferred codons for scoring (bias only)
+  const prefCodons = desired.map(aa=>bestCodon(aa));
+
+  let best=null;
+  for(const p of IUPAC_PATTERNS) {
+    // Must include all desired AAs
+    let ok=true;
+    for(const aa of desiredSet) { if(!p.aaSet.has(aa)) { ok=false; break; } }
+    if(!ok) continue;
+
+    const hasStop = p.aaSet.has("*");
+    const encoded = [...p.aaSet].filter(a=>a!=="?"); // may include '*'
+    const encodedNoStop = encoded.filter(a=>a!=="*");
+    const extraAAs = encodedNoStop.filter(a=>!desiredSet.has(a));
+    const extraCount = extraAAs.length;
+
+    // How many preferred codons are NOT present in this pattern's codon list?
+    let prefMiss=0;
+    for(const pc of prefCodons) if(pc && !p.codons.includes(pc)) prefMiss++;
+
+    // Score: avoid STOP >> avoid extra AAs >> keep codon-count small >> keep preferred codons
+    const score = (hasStop?1e9:0) + extraCount*1e6 + p.codonCount*200 + prefMiss*1000;
+
+    if(!best || score<best.score) {
+      best={...p, hasStop, encodedAAs:encodedNoStop, extraAAs, prefMiss, score};
+    }
+  }
+
+  // Fallback (shouldn't happen)
+  if(!best) {
+    return {pat:"NNN", codonCount:64, hasStop:true, encodedAAs:["?"], extraAAs:["?"], score:1e12};
+  }
+  return best;
+}
+
+function degenerateCodonAtPos(pos) {
+  const wtAA = protein[pos] || "?";
+  const desired = new Set();
+  if(wtIncludeMap[pos]!==false) desired.add(wtAA);
+  for(const aa of (varMap[pos]||[])) desired.add(aa);
+
+  // If no desired (shouldn't), return WT codon
+  if(!desired.size) return {pat:codons[pos], desiredAAs:[wtAA], ...bestDegenerateCodon(new Set([wtAA]))};
+
+  const best = bestDegenerateCodon(desired);
+  return {
+    ...best,
+    pat: best.pat,
+    desiredAAs: [...desired],
+    wtAA,
+    pos,
+  };
+}
+
+function clamp(x, lo, hi){ return Math.max(lo, Math.min(hi, x)); }
+function ceilTo(x, step){ return Math.ceil(x/step)*step; }
+function floorTo(x, step){ return Math.floor(x/step)*step; }
+function abs(x){ return Math.abs(x); }
+
+function countVariantsInRange(startNt, endNt, varNtStarts) {
+  let n=0;
+  for(const v of varNtStarts) if(v>=startNt && v+3<=endNt) n++;
+  return n;
+}
+function overlapIntersectsVariant(a, b, varNtStarts) {
+  for(const v of varNtStarts) {
+    const v2=v+3;
+    if(v < b && v2 > a) return true; // any intersection
+  }
+  return false;
+}
+
+// Minimal binary heap for Dijkstra
+class MinHeap {
+  constructor(){ this.h=[]; }
+  size(){ return this.h.length; }
+  push(x){ this.h.push(x); this._up(this.h.length-1); }
+  pop(){
+    if(!this.h.length) return null;
+    const top=this.h[0];
+    const last=this.h.pop();
+    if(this.h.length){ this.h[0]=last; this._down(0); }
+    return top;
+  }
+  _up(i){
+    while(i>0){
+      const p=(i-1)>>1;
+      if(this.h[p].d<=this.h[i].d) break;
+      [this.h[p],this.h[i]]=[this.h[i],this.h[p]];
+      i=p;
+    }
+  }
+  _down(i){
+    const n=this.h.length;
+    while(true){
+      let l=i*2+1, r=l+1, m=i;
+      if(l<n && this.h[l].d<this.h[m].d) m=l;
+      if(r<n && this.h[r].d<this.h[m].d) m=r;
+      if(m===i) break;
+      [this.h[m],this.h[i]]=[this.h[i],this.h[m]];
+      i=m;
+    }
+  }
+}
+
+function orientForParity(parity, startOrient){
+  return (startOrient==="F") ? (parity===0?"F":"R") : (parity===0?"R":"F");
+}
+
+function computeAssemblyPlan(startOrient) {
+  const full = codons.join("").toUpperCase();
+  const L = full.length;
+  if(!L) return null;
+
+  const step = asmParams.frame3 ? 3 : 1;
+
+  // Search ranges
+  const lenTarget = clamp(parseInt(asmParams.oligoLen)||120, 60, 240);
+  const slack = clamp(parseInt(asmParams.lenSlack)||20, 0, 80);
+  let lenMin = Math.max(60, lenTarget - slack);
+  let lenMax = Math.min(240, lenTarget + slack);
+
+  let ovMin = clamp(parseInt(asmParams.overlapMin)||25, 8, 200);
+  let ovMax = clamp(parseInt(asmParams.overlapMax)||45, 8, 200);
+  if(ovMax<ovMin){ const t=ovMin; ovMin=ovMax; ovMax=t; }
+
+  if(asmParams.frame3){
+    lenMin = ceilTo(lenMin, step);
+    lenMax = floorTo(lenMax, step);
+    ovMin  = ceilTo(ovMin,  step);
+    ovMax  = floorTo(ovMax,  step);
+  }
+  lenMin = Math.max(step, lenMin);
+  lenMax = Math.max(lenMin, lenMax);
+  ovMin  = Math.max(step, ovMin);
+  ovMax  = Math.max(ovMin, ovMax);
+
+  const tmTarget = parseFloat(asmParams.overlapTm)||60;
+  const ovTarget = clamp(parseInt(asmParams.overlapTarget)||Math.round((ovMin+ovMax)/2), ovMin, ovMax);
+
+  const varNtStarts = Object.keys(varMap).map(Number).sort((a,b)=>a-b).map(p=>p*3);
+
+  const nNodes = Math.floor(L/step)+1;
+  const INF = 1e18;
+  const dist = Array.from({length:nNodes}, ()=>[INF, INF]);
+  const prev = Array.from({length:nNodes}, ()=>[null, null]);
+  const heap = new MinHeap();
+
+  dist[0][0]=0;
+  heap.push({d:0, idx:0, par:0});
+
+  while(heap.size()){
+    const cur=heap.pop();
+    if(!cur) break;
+    if(cur.d!==dist[cur.idx][cur.par]) continue;
+    const pos = cur.idx*step;
+    if(pos===L) break;
+
+    // Candidate ends around target length.
+    // NOTE: We only allow end=L (final tile) when the remaining length fits within lenMax.
+    const ends=[];
+    for(let len=lenMin; len<=lenMax; len+=step){
+      const end = pos+len;
+      if(end<=L) ends.push(end);
+    }
+    const remaining = L - pos;
+    if(remaining>0 && remaining<=lenMax){
+      if(!ends.includes(L)) ends.push(L);
+    }
+
+    const curOrient = orientForParity(cur.par, startOrient);
+    const vCount = countVariantsInRange(pos, Math.min(pos+lenMax, L), varNtStarts);
+    const reverseVarPenalty = (asmParams.preferVariantsOnForward && curOrient==="R") ? 8000 : 0; // per variant counted below
+
+    for(const end of ends){
+      const len = end - pos;
+
+      // Variant penalty (only counts variants fully inside this oligo segment)
+      const vHere = countVariantsInRange(pos, end, varNtStarts);
+      const varPenalty = (curOrient==="R") ? vHere*reverseVarPenalty : 0;
+
+      // Base edge cost: prefer fewer oligos + stay near target length
+      const baseCost = 1000 + abs(len - lenTarget)*8 + varPenalty;
+
+      if(end===L){
+        const nd = cur.d + baseCost;
+        const nidx = Math.floor(end/step);
+        const npar = cur.par ^ 1;
+        if(nd < dist[nidx][npar]){
+          dist[nidx][npar]=nd;
+          prev[nidx][npar]={pidx:cur.idx, ppar:cur.par, edge:{start:pos,end,ov:0,nextStart:end,tm:null,orient:curOrient}};
+          heap.push({d:nd, idx:nidx, par:npar});
+        }
+        continue;
+      }
+
+      for(let ov=ovMin; ov<=ovMax; ov+=step){
+        if(ov>=len) continue;
+        const nextStart = end - ov;
+        if(nextStart<=pos) continue;
+
+        if(asmParams.avoidVarOverlap && overlapIntersectsVariant(nextStart, end, varNtStarts)) continue;
+
+        const tm = parseFloat(calcTm(full.slice(nextStart, end)));
+        if(isNaN(tm) || tm < tmTarget) continue;
+
+        const ovPenalty = abs(ov - ovTarget)*3;
+        const nd = cur.d + baseCost + ovPenalty;
+
+        const nidx = Math.floor(nextStart/step);
+        const npar = cur.par ^ 1;
+
+        if(nd < dist[nidx][npar]){
+          dist[nidx][npar]=nd;
+          prev[nidx][npar]={pidx:cur.idx, ppar:cur.par, edge:{start:pos,end,ov,nextStart,tm,orient:curOrient}};
+          heap.push({d:nd, idx:nidx, par:npar});
+        }
+      }
+    }
+  }
+
+  const endIdx = Math.floor(L/step);
+  const bestPar = dist[endIdx][0] <= dist[endIdx][1] ? 0 : 1;
+  if(dist[endIdx][bestPar]===INF) return null;
+
+  // Reconstruct edges
+  const edges=[];
+  let idx=endIdx, par=bestPar;
+  while(!(idx===0 && par===0)){
+    const pr = prev[idx][par];
+    if(!pr) break;
+    edges.push(pr.edge);
+    idx=pr.pidx; par=pr.ppar;
+  }
+  edges.reverse();
+
+  // Count how many variant codons land on reverse oligos
+  let varOnReverse=0;
+  edges.forEach(e=>{
+    const vHere=countVariantsInRange(e.start,e.end,varNtStarts);
+    if(e.orient==="R") varOnReverse += vHere;
+  });
+
+  return {startOrient, cost:dist[endIdx][bestPar], edges, varOnReverse};
+}
+
+function formatSeqWithSpans(seqUpper, spans){
+  const lower = seqUpper.toLowerCase();
+  let html=""; let p=0;
+  const ss = (spans||[]).slice().sort((a,b)=>a.s-b.s);
+  for(const sp of ss){
+    if(sp.s>p) html += `<span class="flank">${lower.slice(p,sp.s)}</span>`;
+    html += `<span class="mut">${sp.text.toUpperCase()}</span>`;
+    p = sp.e;
+  }
+  if(p<seqUpper.length) html += `<span class="flank">${lower.slice(p)}</span>`;
+  return html;
+}
+
+function approxGcPct(seq){
+  const s=seq.toUpperCase();
+  const atgc=[...s].filter(b=>b==="A"||b==="T"||b==="G"||b==="C");
+  if(!atgc.length) return "—";
+  const gc=atgc.filter(b=>b==="G"||b==="C").length;
+  return Math.round(gc/atgc.length*100)+"%";
+}
+
+function buildAssemblyTiles(plan) {
+  const full = codons.join("").toUpperCase();
+  const varPositions = Object.keys(varMap).map(Number).sort((a,b)=>a-b);
+
+  const tiles = plan.edges.map((e,i)=>{
+    const start=e.start, end=e.end, len=end-start, orient=e.orient;
+    const name=`Tile${String(i+1).padStart(3,"0")}_${orient}`;
+
+    const prevOv = (i>0) ? plan.edges[i-1].ov : 0;
+    const prevTm = (i>0) ? plan.edges[i-1].tm : null;
+    const nextOv = (i<plan.edges.length-1) ? e.ov : 0;
+    const nextTm = (i<plan.edges.length-1) ? e.tm : null;
+
+    // Build gene-segment with degenerate codons inserted (gene orientation)
+    const seg = full.slice(start,end);
+    const segLen = seg.length;
+
+    const vList=[];
+    for(const pos of varPositions){
+      const vnt = pos*3;
+      if(vnt>=start && vnt+3<=end){
+        vList.push({pos, vnt, rel:vnt-start, info:degenerateCodonAtPos(pos)});
+      }
+    }
+    vList.sort((a,b)=>a.rel-b.rel);
+
+    let geneWith=""; let cursor=0;
+    for(const v of vList){
+      geneWith += seg.slice(cursor, v.rel);
+      geneWith += v.info.pat;
+      cursor = v.rel+3;
+    }
+    geneWith += seg.slice(cursor);
+    geneWith = geneWith.toUpperCase();
+
+    const seqOrder = (orient==="F") ? geneWith : revCompIupac(geneWith).toUpperCase();
+
+    const spans = vList.map(v=>{
+      if(orient==="F"){
+        return {s:v.rel, e:v.rel+3, text:v.info.pat};
+      } else {
+        const s = segLen - (v.rel+3);
+        return {s, e:s+3, text:revCompIupac(v.info.pat).toUpperCase()};
+      }
+    });
+
+    // Variant chips
+    const chips = vList.map(v=>{
+      const info=v.info;
+      const wtAA = info.wtAA;
+      const pos1 = info.pos+1;
+      const desired = info.desiredAAs?.join("") || "";
+      const enc = info.encodedAAs?.join("") || "";
+      const extra = info.extraAAs?.join("") || "";
+      const stop = info.hasStop ? " STOP" : "";
+      const tip = `Desired: ${desired} | Encoded: ${enc}${extra?` (+${extra})`:""}${stop} | Codons: ${info.codonCount}`;
+      const {color,rgb}=aaColor(wtAA);
+      const warn = (info.hasStop || (info.extraAAs&&info.extraAAs.length)) ? `opacity:.95;` : "";
+      return `<span class="combo-mut-chip" title="${tip}"
+        style="color:${color};border-color:rgba(${rgb},.35);background:rgba(${rgb},.08);${warn}">
+        ${wtAA}${pos1} · ${info.pat}
+      </span>`;
+    }).join("");
+
+    // Warnings for this tile
+    const hasStop = vList.some(v=>v.info.hasStop);
+    const hasExtra = vList.some(v=>v.info.extraAAs && v.info.extraAAs.length);
+    const warnTags = [
+      ...(hasStop ? [`<div class="ctrl-pill bad">STOP risk</div>`] : []),
+      ...(!asmParams.avoidVarOverlap ? [`<div class="ctrl-pill warn">variants in overlaps allowed</div>`] : []),
+    ].join("");
+
+    return {
+      name, orient, start, end, len,
+      prevOv, prevTm, nextOv, nextTm,
+      seqOrder,
+      seqDisplay: formatSeqWithSpans(seqOrder, spans),
+      gc: approxGcPct(seqOrder),
+      chipsHtml: chips,
+      warnTagsHtml: warnTags,
+      variantCount: vList.length,
+      hasStop, hasExtra,
+    };
+  });
+
+  return tiles;
+}
+
+function renderAssemblyOligos() {
+  const scroll   = document.getElementById("oligos-scroll");
+  const bdgWrp   = document.getElementById("oligo-badge-wrap");
+  const expBar   = document.getElementById("oligo-export");
+  const warnPill = document.getElementById("asm-warn");
+
+  if(!codons.length){
+    asmPlanCache = null;
+    scroll.innerHTML=`<div class="combos-empty"><div class="empty-icon">🧬</div><div class="empty-txt" style="font-size:10px;">Paste a coding sequence above<br>to design overlap-extension tiles.</div></div>`;
+    bdgWrp.innerHTML=""; expBar.style.display="none"; if(warnPill) warnPill.style.display="none"; return;
+  }
+
+  // Compute best plan
+  let plan=null;
+  if(asmParams.start==="auto"){
+    const pF = computeAssemblyPlan("F");
+    const pR = computeAssemblyPlan("R");
+    const cands = [pF,pR].filter(Boolean);
+    if(cands.length){
+      cands.sort((a,b)=>(a.varOnReverse-b.varOnReverse) || (a.cost-b.cost));
+      plan=cands[0];
+    }
+  } else {
+    plan = computeAssemblyPlan(asmParams.start);
+  }
+
+  if(!plan){
+    asmPlanCache = null;
+    expBar.style.display="none";
+    bdgWrp.innerHTML=`<div class="warn-badge">No feasible tiling</div>`;
+    if(warnPill){ warnPill.style.display="inline-flex"; warnPill.textContent="adjust params"; }
+    scroll.innerHTML=`<div class="combos-empty">
+      <div class="empty-icon">⚠️</div>
+      <div class="empty-txt" style="font-size:10px;">
+        Could not find a set of tiled oligos that satisfies your constraints.<br><br>
+        Try one or more of these:<br>
+        • Increase max overlap<br>
+        • Lower overlap Tm threshold<br>
+        • Uncheck “in-frame (×3)” to allow 1-nt granularity<br>
+        • (Not recommended) allow variants in overlaps
+      </div>
+    </div>`;
+    return;
+  }
+
+  if(warnPill) warnPill.style.display="none";
+
+  const tiles = buildAssemblyTiles(plan);
+  asmPlanCache = {mode:"assembly", plan, tiles, params: {...asmParams}, codonScheme};
+
+  bdgWrp.innerHTML=`<div class="count-badge">${tiles.length} oligo${tiles.length!==1?"s":""}</div>
+    <div class="warn-badge">${plan.varOnReverse} variant-site${plan.varOnReverse!==1?"s":""} on REV tiles</div>`;
+  expBar.style.display="flex";
+
+  scroll.innerHTML = tiles.map((t,i)=>{
+    const ovPrev = (t.prevOv>0) ? `Prev ov: <span>${t.prevOv} nt (Tm~${t.prevTm}°C)</span>` : `Prev ov: <span>—</span>`;
+    const ovNext = (t.nextOv>0) ? `Next ov: <span>${t.nextOv} nt (Tm~${t.nextTm}°C)</span>` : `Next ov: <span>—</span>`;
+    const coords = `nt ${t.start+1}–${t.end}`;
+
+    return `<div class="oligo-entry">
+      <div class="oligo-entry-hdr">
+        <div class="oligo-name">${t.name}</div>
+        <div class="oligo-tags">
+          <div class="otag b">${t.orient==="F"?"FWD":"REV"}</div>
+          <div class="otag a">${t.len} nt</div>
+          <div class="otag g">${coords}</div>
+        </div>
+        ${t.warnTagsHtml?`<div class="oligo-tags" style="margin-left:auto">${t.warnTagsHtml}</div>`:""}
+      </div>
+
+      ${t.variantCount?`<div class="combo-muts" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">${t.chipsHtml}</div>`:""}
+
+      <div class="oligo-seq-wrap" style="margin-top:8px;">
+        <div class="oligo-dir">5′→3′</div>
+        <div class="oligo-seq-txt">${t.seqDisplay}</div>
+        <button class="oligo-copy-btn" onclick="copyTxt(this,'${t.seqOrder}')">copy</button>
+      </div>
+
+      <div class="oligo-stats">
+        <div class="ostat">${ovPrev}</div>
+        <div class="ostat">${ovNext}</div>
+        <div class="ostat">GC: <span>${t.gc}</span></div>
+        <div class="ostat">Codon table: <span>${codonScheme}</span></div>
+        <div class="ostat">Variants: <span>${t.variantCount}</span></div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+
+/* ═══════════════════════════════════════════════
+   ASSEMBLY PREVIEW (map + codon-alignment)
+═══════════════════════════════════════════════ */
+function reverseStr(s){ return s.split("").reverse().join(""); }
+
+
+function centerCell(str, width){
+  const s = String(str ?? "");
+  if(s.length>=width) return s.slice(0,width);
+  const left = Math.floor((width - s.length)/2);
+  const right = width - s.length - left;
+  return " ".repeat(left) + s + " ".repeat(right);
+}
+
+function hasWTCombination(){
+  const keys = Object.keys(varMap);
+  if(!keys.length) return true; // no mutations → WT exists
+  for(const k of keys){
+    if(wtIncludeMap[k]===false) return false;
+  }
+  return true;
+}
+
+function countCombinationsBigInt(){
+  const keys = Object.keys(varMap);
+  if(!keys.length) return 1n;
+
+  let total = 1n;
+  for(const k of keys){
+    const s = varMap[k];
+    const n = (s && s.size) ? s.size : 0;
+    const wtN = (wtIncludeMap[k]===false) ? 0 : 1;
+    total *= BigInt(wtN + n);
+  }
+  return total;
+}
+
+function formatBigInt(n){
+  try { return n.toLocaleString(); } catch { return String(n); }
+}
+
+function applyCombosCollapsed(){
+  const panel = document.getElementById("combos-panel");
+  const btn   = document.getElementById("combo-toggle");
+  const note  = document.getElementById("combos-collapsed-note");
+  if(!panel || !btn) return;
+
+  if(combosCollapsed){
+    panel.classList.add("collapsed");
+    btn.textContent = "▸";
+    btn.title = "Expand combinations";
+    if(note) note.style.display = "block";
+  } else {
+    panel.classList.remove("collapsed");
+    btn.textContent = "▾";
+    btn.title = "Collapse combinations";
+    if(note) note.style.display = "none";
+  }
+  try { localStorage.setItem("combosCollapsed", combosCollapsed ? "1" : "0"); } catch {}
+}
+
+function toggleCombosPanel(){
+  combosCollapsed = !combosCollapsed;
+  applyCombosCollapsed();
+  renderCombinations(); // refresh counts/visibility
+}
+
+function initCombosPanel(){
+  try {
+    const v = localStorage.getItem("combosCollapsed");
+    combosCollapsed = (v===null) ? true : (v==="1");
+  } catch {
+    combosCollapsed = true;
+  }
+  applyCombosCollapsed();
+}
+
+
+function applyOligosCollapsed(){
+  const panel = document.getElementById("oligos-panel");
+  const btn   = document.getElementById("oligo-toggle");
+  const note  = document.getElementById("oligos-collapsed-note");
+  if(!panel || !btn) return;
+
+  if(oligosCollapsed){
+    panel.classList.add("collapsed");
+    btn.textContent = "▸";
+    btn.title = "Expand oligos";
+    if(note) note.style.display = "block";
+  } else {
+    panel.classList.remove("collapsed");
+    btn.textContent = "▾";
+    btn.title = "Collapse oligos";
+    if(note) note.style.display = "none";
+  }
+  try { localStorage.setItem("oligosCollapsed", oligosCollapsed ? "1" : "0"); } catch {}
+}
+
+function toggleOligosPanel(){
+  oligosCollapsed = !oligosCollapsed;
+  applyOligosCollapsed();
+  renderOligos(); // will show pending if RUN is needed
+}
+
+function initOligosPanel(){
+  try {
+    const v = localStorage.getItem("oligosCollapsed");
+    oligosCollapsed = (v===null) ? true : (v==="1");
+  } catch {
+    oligosCollapsed = true;
+  }
+  applyOligosCollapsed();
+}
+
+
+function fmtAaRow(aas){
+  // 1 letter centered per codon column (4 chars wide: " A  ")
+  let out="";
+  for(const aa of aas) out += " " + ((aa||"?")) + "  ";
+  return out;
+}
+
+function fmtAaRowHtml(startPos, aas){
+  // Same 4-char cell width as fmtAaRow, but each AA cell is clickable (mutation selector).
+  let out="";
+  for(let i=0;i<aas.length;i++){
+    const pos = startPos + i;
+    const aa = (aas[i] || "?");
+    const wtExcluded = (wtIncludeMap[pos] === false);
+    const hasVars = (varMap[pos] && varMap[pos].size) || wtExcluded;
+    const vars = varMap[pos] ? [...varMap[pos]] : [];
+    let title = `Pos ${pos+1} · WT ${aa}`;
+    if(wtExcluded) title += " · WT excluded";
+    if(vars.length) title += ` · Variants: ${vars.join(",")}`;
+    const cls = `sel-aa ${hasVars?"has-vars":""} ${wtExcluded?"wt-excl":""}`.trim();
+    out += `<span class="${cls}" data-pos="${pos}" title="${title}">${aa}</span> `;
+  }
+  return out;
+}
+
+function fmtVarRow(startPos, count){
+  // Center variant AAs within each 4-char codon cell.
+  // If multiple variants are selected at a position, show up to 3 letters; otherwise show “+N”.
+  let out="";
+  for(let i=0;i<count;i++){
+    const pos = startPos+i;
+    const vars = [...(varMap[pos]||[])];
+    if(!vars.length){ out += "    "; continue; }
+
+    let s = vars.join("");
+    if(s.length<=3){
+      out += centerCell(s, 4);
+    } else if(vars.length===4){
+      out += centerCell(vars.slice(0,3).join("") + "+", 4);
+    } else {
+      out += centerCell("+" + vars.length, 4);
+    }
+  }
+  return out;
+}
+
+function fmtDegRow(startPos, count){
+  let out="";
+  for(let i=0;i<count;i++){
+    const pos=startPos+i;
+    if(varMap[pos] && varMap[pos].size){
+      const info = degenerateCodonAtPos(pos);
+      out += (info.pat || "NNN") + " ";
+    } else {
+      out += "    ";
+    }
+  }
+  return out;
+}
+
+function fmtDnaRow(codonSlice){
+  let out="";
+  for(const c of codonSlice) out += (c||"???").toUpperCase() + " ";
+  return out;
+}
+
+function fmtRulerRow(startPos, count){
+  // Put AA position labels every 10 residues at the start of the 4-char cell
+  const width = count*4;
+  const chars = Array.from({length:width}, ()=>" ");
+  for(let i=0;i<count;i++){
+    const aaPos = startPos+i+1;
+    if(aaPos===1 || aaPos%10===0){
+      const lab = String(aaPos);
+      const idx = i*4;
+      for(let k=0;k<lab.length && idx+k<width;k++){
+        chars[idx+k] = lab[k];
+      }
+    }
+  }
+  return chars.join("");
+}
+
+function buildAsmMapSvg(tiles){
+  const fullLen = codons.length*3;
+  const varAAs = Object.keys(varMap).map(Number).sort((a,b)=>a-b);
+  const varNt = varAAs.map(p=>p*3);
+
+  // Scale: aim for ~1200px for typical genes, but keep within reasonable bounds.
+  const targetW = 1200;
+  const scale = Math.max(0.4, Math.min(2.0, targetW / Math.max(300, fullLen)));
+  const x0 = 70;
+  const w = Math.round(fullLen*scale) + x0 + 20;
+  const h = 150;
+  const y0 = 72;
+
+  // Ticks every 30 nt (10 aa), labels every 150 nt (50 aa)
+  const tickNt = 30;
+  const labelNt = 150;
+
+  let svg = `<svg class="asm-map-svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">`;
+  svg += `<line class="axis" x1="${x0}" y1="${y0}" x2="${x0+fullLen*scale}" y2="${y0}"/>`;
+
+  for(let nt=0; nt<=fullLen; nt+=tickNt){
+    const x = x0 + nt*scale;
+    svg += `<line class="tick" x1="${x}" y1="${y0-6}" x2="${x}" y2="${y0+6}"/>`;
+    if(nt%labelNt===0){
+      const aa = Math.floor(nt/3)+1;
+      svg += `<text class="tickLbl" x="${x}" y="${y0-10}" text-anchor="middle">aa ${aa}</text>`;
+    }
+  }
+
+  // Variant marks
+  for(const v of varNt){
+    const x = x0 + (v+1.5)*scale;
+    svg += `<line class="varMark" x1="${x}" y1="${y0-46}" x2="${x}" y2="${y0+46}"/>`;
+  }
+
+  // Tiles
+  tiles.forEach((t, i)=>{
+    const x1 = x0 + t.start*scale;
+    const x2 = x0 + t.end*scale;
+    const y = (t.orient==="F") ? (y0-28) : (y0+16);
+    const cls = (t.orient==="F") ? "tileF" : "tileR";
+    const arrow = 8;
+    const bodyW = Math.max(2, (x2-x1) - arrow);
+    if(t.orient==="F"){
+      svg += `<rect class="${cls}" x="${x1}" y="${y}" width="${bodyW}" height="12" rx="3" ry="3"/>`;
+      svg += `<polygon class="${cls}" points="${x1+bodyW},${y} ${x2},${y+6} ${x1+bodyW},${y+12}"/>`;
+    } else {
+      svg += `<polygon class="${cls}" points="${x1},${y+6} ${x1+arrow},${y} ${x1+arrow},${y+12}"/>`;
+      svg += `<rect class="${cls}" x="${x1+arrow}" y="${y}" width="${bodyW}" height="12" rx="3" ry="3"/>`;
+    }
+    const mid = (x1+x2)/2;
+    const lbl = t.name.replace(/^Tile/, "");
+    svg += `<text class="tileLbl" x="${mid}" y="${y+10}" text-anchor="middle">${lbl}</text>`;
+  });
+
+  svg += `</svg>`;
+  const note = `<div class="asm-map-note">Red lines = variant sites. Bars/arrows = ordered oligos (FWD above axis, REV below). Overlaps are visible where bars overlap.</div>`;
+  return `<div class="asm-map-wrap">${svg}${note}</div>`;
+}
+
+function buildAlignmentBlocksHtml(tiles, blockAa, showDna, showDeg){
+  const nAA = protein.length;
+  const fullNt = nAA*3;
+  const varNtSet = new Set(Object.keys(varMap).map(Number).map(p=>p*3));
+
+  const blocks = [];
+  const blockSize = clamp(parseInt(blockAa)||nAA, 20, nAA);
+
+  for(let b0=0; b0<nAA; b0+=blockSize){
+    const b1 = Math.min(nAA, b0+blockSize);
+    const aaSlice = protein.slice(b0,b1);
+    const codSlice = codons.slice(b0,b1);
+    const ntStart = b0*3;
+    const ntEnd = b1*3;
+
+    const title = `aa ${b0+1}–${b1}`;
+    const sub   = `nt ${ntStart+1}–${ntEnd} · ${b1-b0} aa`;
+    let html = `<div class="asm-block">
+      <div class="asm-block-hdr">
+        <div class="asm-block-title">${title}</div>
+        <div class="asm-block-sub">${sub}</div>
+      </div>`;
+
+    // Reference tracks (mutation selection lives here)
+    html += `<div class="asm-refwin"><div class="aln-refblock">`;
+    html += `<div class="aln-line ref pos"><div class="aln-label">pos</div><div class="aln-seq">${fmtRulerRow(b0, b1-b0)}</div></div>`;
+    if(showDna){
+      html += `<div class="aln-line ref wt-dna"><div class="aln-label">WT dna</div><div class="aln-seq">${fmtDnaRow(codSlice)}</div></div>`;
+    }
+    html += `<div class="aln-line ref wt-aa"><div class="aln-label">WT aa</div><div class="aln-seq">${fmtAaRowHtml(b0, aaSlice)}</div></div>`;
+    html += `<div class="aln-line ref vars"><div class="aln-label">vars</div><div class="aln-seq">${fmtVarRow(b0, b1-b0)}</div></div>`;
+    if(showDeg){
+      html += `<div class="aln-line ref deg"><div class="aln-label">deg</div><div class="aln-seq">${fmtDegRow(b0, b1-b0)}</div></div>`;
+    }
+    html += `</div></div>`;
+
+    html += `<div class="aln-spacer"></div>`;
+
+    html += `<div class="asm-outwin">`;
+
+    // Tiles that intersect this block
+    const lines = [];
+    tiles.forEach((t)=>{
+      if(t.end<=ntStart || t.start>=ntEnd) return;
+
+      // Display sequence aligned to gene coordinate:
+      //  - FWD: shown 5'→3' left-to-right
+      //  - REV: shown in annealing orientation (complement, leftward), i.e. reverse of ordered sequence,
+      //         so bases line up under the gene coordinates.
+      const disp = (t.orient==="F") ? t.seqOrder.toUpperCase() : reverseStr(t.seqOrder.toUpperCase());
+
+      const s = Math.max(t.start, ntStart);
+      const e = Math.min(t.end, ntEnd);
+      const off = s - t.start;
+      const seg = disp.slice(off, off+(e-s));
+
+      // Pad to block offset (codon-aligned)
+      const padCod = Math.floor((s-ntStart)/3);
+      const pad = " ".repeat(padCod*4);
+
+      // Format segment into codon triplets; highlight overlaps + degenerate codons
+      let segHtml = "";
+      for(let i=0;i<seg.length;i+=3){
+        const cod = seg.slice(i,i+3);
+        const absNt = s + i;
+
+        const inPrevOv = t.prevOv>0 && absNt>=t.start && absNt < (t.start + t.prevOv);
+        const inNextOv = t.nextOv>0 && absNt>= (t.end - t.nextOv) && absNt < t.end;
+        const isOv = inPrevOv || inNextOv;
+
+        const isVar = varNtSet.has(absNt);
+
+        const cls = `${isOv?"aln-ov":""} ${isVar?"aln-mut":""}`.trim();
+        if(cls) segHtml += `<span class="${cls}">${cod}</span> `;
+        else segHtml += `${cod} `;
+      }
+
+      const arrow = (t.orient==="F") ? "→" : "←";
+      const lbl = `${t.name} ${arrow}  (${t.start+1}-${t.end})`;
+      lines.push(`<div class="aln-line"><div class="aln-label tile">${lbl}</div><div class="aln-seq">${pad}${segHtml}</div></div>`);
+    });
+
+    if(!lines.length){
+      html += `<div class="aln-line"><div class="aln-label tile">tiles</div><div class="aln-seq" style="color:var(--slate)">—</div></div>`;
+    } else {
+      html += lines.join("");
+    }
+
+    html += `<div class="aln-legend">
+      <span style="color:var(--sky);font-weight:700;">Overlap</span> regions are shaded.
+      <span style="color:var(--gold);font-weight:800;">Degenerate/variant codons</span> are highlighted at variant sites.
+      REV tiles are shown in annealing orientation (displayed leftwards) so they align to the gene coordinates.
+    </div>`;
+
+    html += `</div><div class="asm-shared-scrollwrap"><div class="asm-hscroll shared"><div class="asm-hscroll-inner"></div></div></div></div>`;
+    blocks.push(html);
+  }
+
+  return `<div class="asm-aln-wrap">${blocks.join("")}</div>`;
+}
+
+function buildDuplexBlocksHtml(tiles, blockAa, showDna, showDeg){
+  // Duplex view: combine all FWD tiles on a top (sense) track and all REV tiles on a bottom (antisense) track,
+  // aligned to gene coordinates, with a pairing line indicating overlap/base-pairing regions.
+  const nAA = protein.length;
+  const blockSize = clamp(parseInt(blockAa)||nAA, 20, nAA);
+  const varNtSet = new Set(Object.keys(varMap).map(Number).map(p=>p*3));
+
+  function fmtTripletRowFromBases(baseArr, ntStart, pairedMask){
+    const nCod = Math.floor(baseArr.length/3);
+    let html="";
+    for(let ci=0; ci<nCod; ci++){
+      const bi = ci*3;
+      const cod = baseArr.slice(bi, bi+3).join("");
+      const absNt = ntStart + bi;
+
+      const isVar = varNtSet.has(absNt);
+      // Treat as "paired/overlap" if ANY base in this codon is paired (works even if frame3 is off)
+      const isOv = pairedMask ? (pairedMask[bi] || pairedMask[bi+1] || pairedMask[bi+2]) : false;
+
+      const cls = `${isOv?"aln-ov":""} ${isVar?"aln-mut":""}`.trim();
+      html += cls ? `<span class="${cls}">${cod}</span> ` : `${cod} `;
+    }
+    return html;
+  }
+
+  function fmtPairRowFromMask(pairedMask){
+    const nCod = Math.floor(pairedMask.length/3);
+    let out="";
+    for(let ci=0; ci<nCod; ci++){
+      const bi = ci*3;
+      let seg="";
+      seg += pairedMask[bi]   ? "|" : " ";
+      seg += pairedMask[bi+1] ? "|" : " ";
+      seg += pairedMask[bi+2] ? "|" : " ";
+      out += seg + " ";
+    }
+    return out;
+  }
+
+  const blocks = [];
+  for(let b0=0; b0<nAA; b0+=blockSize){
+    const b1 = Math.min(nAA, b0+blockSize);
+    const aaSlice = protein.slice(b0,b1);
+    const codSlice = codons.slice(b0,b1);
+    const ntStart = b0*3;
+    const ntEnd = b1*3;
+    const ntLen = ntEnd - ntStart;
+
+    // Fill base arrays for the block
+    const top = Array.from({length:ntLen}, ()=>" ");
+    const bot = Array.from({length:ntLen}, ()=>" ");
+
+    // Place each tile on its appropriate track
+    for(const t of tiles){
+      if(t.end<=ntStart || t.start>=ntEnd) continue;
+
+      const disp = (t.orient==="F") ? t.seqOrder.toUpperCase() : reverseStr(t.seqOrder.toUpperCase()); // annealing orientation for REV
+      const s = Math.max(t.start, ntStart);
+      const e = Math.min(t.end, ntEnd);
+      const off = s - t.start;
+      const seg = disp.slice(off, off+(e-s));
+
+      const rel0 = s - ntStart;
+      for(let i=0;i<seg.length;i++){
+        const ch = seg[i] || " ";
+        if(t.orient==="F") top[rel0+i] = ch;
+        else bot[rel0+i] = ch;
+      }
+    }
+
+    // Pairing mask: where BOTH top and bottom have bases (overlap / base-pairing)
+    const paired = top.map((ch,i)=> (ch!==" " && bot[i]!==" ") );
+
+    const title = `aa ${b0+1}–${b1}`;
+    const sub   = `nt ${ntStart+1}–${ntEnd} · ${b1-b0} aa`;
+    let html = `<div class="asm-block">
+      <div class="asm-block-hdr">
+        <div class="asm-block-title">${title}</div>
+        <div class="asm-block-sub">${sub}</div>
+      </div>`;
+
+    // Reference tracks (mutation selection lives here)
+    html += `<div class="asm-refwin"><div class="aln-refblock">`;
+    html += `<div class="aln-line ref pos"><div class="aln-label">pos</div><div class="aln-seq">${fmtRulerRow(b0, b1-b0)}</div></div>`;
+    if(showDna){
+      html += `<div class="aln-line ref wt-dna"><div class="aln-label">WT dna</div><div class="aln-seq">${fmtDnaRow(codSlice)}</div></div>`;
+    }
+    html += `<div class="aln-line ref wt-aa"><div class="aln-label">WT aa</div><div class="aln-seq">${fmtAaRowHtml(b0, aaSlice)}</div></div>`;
+    html += `<div class="aln-line ref vars"><div class="aln-label">vars</div><div class="aln-seq">${fmtVarRow(b0, b1-b0)}</div></div>`;
+    if(showDeg){
+      html += `<div class="aln-line ref deg"><div class="aln-label">deg</div><div class="aln-seq">${fmtDegRow(b0, b1-b0)}</div></div>`;
+    }
+    html += `</div></div>`;
+
+    html += `<div class="aln-spacer"></div>`;
+
+    html += `<div class="asm-outwin">`;
+
+    // Duplex tracks
+    html += `<div class="aln-line"><div class="aln-label tile">FWD 5′→3′</div><div class="aln-seq">${fmtTripletRowFromBases(top, ntStart, paired)}</div></div>`;
+    html += `<div class="aln-line pair"><div class="aln-label tile">pair</div><div class="aln-seq">${fmtPairRowFromMask(paired)}</div></div>`;
+    html += `<div class="aln-line"><div class="aln-label tile">REV 3′←5′</div><div class="aln-seq">${fmtTripletRowFromBases(bot, ntStart, paired)}</div></div>`;
+
+    html += `<div class="aln-legend">
+      <span style="color:var(--sky);font-weight:700;">Base-paired</span> (overlap) regions show <span style="color:var(--sky);font-weight:900;">|||</span> on the “pair” line.
+      <span style="color:var(--gold);font-weight:800;">Variant codons</span> are highlighted at variant sites.
+      REV oligos are displayed in annealing orientation so bases align to the sense coordinate axis.
+    </div>`;
+
+    html += `</div><div class="asm-shared-scrollwrap"><div class="asm-hscroll shared"><div class="asm-hscroll-inner"></div></div></div></div>`;
+    blocks.push(html);
+  }
+
+  return `<div class="asm-aln-wrap">${blocks.join("")}</div>`;
+}
+
+
+function buildSelectorBlocksHtml(blockAa, showDna, showDeg, msg){
+  // Reference-only view (for selecting variants) shown when:
+  //  - the design is “pending” (needs RUN), or
+  //  - user is not in assembly mode.
+  const nAA = protein.length;
+  const blockSize = clamp(parseInt(blockAa)||nAA, 20, nAA);
+  const blocks = [];
+
+  for(let b0=0; b0<nAA; b0+=blockSize){
+    const b1 = Math.min(nAA, b0+blockSize);
+    const aaSlice = protein.slice(b0,b1);
+    const codSlice = codons.slice(b0,b1);
+    const ntStart = b0*3;
+    const ntEnd = b1*3;
+
+    const title = `aa ${b0+1}–${b1}`;
+    const sub   = `nt ${ntStart+1}–${ntEnd} · ${b1-b0} aa`;
+
+    let html = `<div class="asm-block">
+      <div class="asm-block-hdr">
+        <div class="asm-block-title">${title}</div>
+        <div class="asm-block-sub">${sub}</div>
+      </div>`;
+
+    html += `<div class="asm-refwin"><div class="aln-refblock">`;
+    html += `<div class="aln-line ref pos"><div class="aln-label">pos</div><div class="aln-seq">${fmtRulerRow(b0, b1-b0)}</div></div>`;
+    if(showDna){
+      html += `<div class="aln-line ref wt-dna"><div class="aln-label">WT dna</div><div class="aln-seq">${fmtDnaRow(codSlice)}</div></div>`;
+    }
+    html += `<div class="aln-line ref wt-aa"><div class="aln-label">WT aa</div><div class="aln-seq">${fmtAaRowHtml(b0, aaSlice)}</div></div>`;
+    html += `<div class="aln-line ref vars"><div class="aln-label">vars</div><div class="aln-seq">${fmtVarRow(b0, b1-b0)}</div></div>`;
+    if(showDeg){
+      html += `<div class="aln-line ref deg"><div class="aln-label">deg</div><div class="aln-seq">${fmtDegRow(b0, b1-b0)}</div></div>`;
+    }
+    html += `</div></div>`;
+
+    html += `<div class="aln-spacer"></div>`;
+
+    html += `<div class="asm-outwin">`;
+    html += `<div class="aln-line"><div class="aln-label tile">oligos</div><div class="aln-seq" style="color:var(--slate)">${msg||""}</div></div>`;
+    html += `</div><div class="asm-shared-scrollwrap"><div class="asm-hscroll shared"><div class="asm-hscroll-inner"></div></div></div></div>`;
+    blocks.push(html);
+  }
+
+  return `<div class="asm-aln-wrap">${blocks.join("")}</div>`;
+}
+
+function reanchorDropdownInPreview(){
+  if(activeDropdownPos===null) return;
+  const dd=document.getElementById("dropdown");
+  if(!dd || dd.style.display==="none") return;
+  const cell = document.querySelector(`.sel-aa[data-pos="${activeDropdownPos}"]`);
+  if(!cell) return;
+  activeDropdownAnchor = cell;
+  document.querySelectorAll(".sel-aa.active").forEach(el=>el.classList.remove("active"));
+  cell.classList.add("active");
+  positionDropdown(activeDropdownPos);
+}
+
+function setupAsmScrollSync(){
+  const ref = document.querySelector(".asm-refwin");
+  const out = document.querySelector(".asm-outwin");
+  const bar = document.querySelector(".asm-hscroll.shared");
+  const inner = bar ? bar.querySelector(".asm-hscroll-inner") : null;
+  if(!ref || !out || !bar || !inner) return;
+
+  // Avoid stacking multiple listeners
+  if(bar._syncBound) return;
+
+  bar.style.visibility = 'visible';
+  // Ensure the scrollbar has the correct scroll range
+  const updateRange = ()=>{
+    // Use the larger of the two content widths
+    const w = Math.max(ref.scrollWidth, out.scrollWidth, 1);
+    inner.style.width = w + "px";
+  };
+  requestAnimationFrame(updateRange);
+  requestAnimationFrame(()=>{setTimeout(updateRange,0)});
+
+  let syncing = false;
+  const syncAll = (src)=>{
+    if(syncing) return;
+    syncing = true;
+    const x = src.scrollLeft;
+    ref.scrollLeft = x;
+    out.scrollLeft = x;
+    bar.scrollLeft = x;
+    syncing = false;
+  };
+
+  // One scrollbar drives both panes
+  bar.addEventListener("scroll", ()=>syncAll(bar), {passive:true});
+
+  // Still allow trackpad/wheel scrolling directly over either pane
+  ref.addEventListener("scroll", ()=>syncAll(ref), {passive:true});
+  out.addEventListener("scroll", ()=>syncAll(out), {passive:true});
+
+  // Recompute range if fonts/layout change
+  window.addEventListener("resize", updateRange, {passive:true});
+  // Slight delay after render to catch late layout
+  setTimeout(updateRange, 0);
+  setTimeout(updateRange, 50);
+
+  bar._syncBound = true;
+
+  // Initialize
+  syncAll(bar);
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared horizontal scroll bar (keeps WT reference + oligo output aligned)
+// ─────────────────────────────────────────────────────────────────────────────
+let _sharedScrollSyncing = false;
+
+function getAsmPanes(){
+  const ref = document.querySelector(".asm-refwin");
+  const out = document.querySelector(".asm-outwin");
+  return {ref, out};
+}
+
+function updateSharedScrollMetrics(){
+  const wrap = document.getElementById("shared-scroll-wrap");
+  const bar = document.getElementById("sharedScrollBar");
+  const pad = document.getElementById("sharedScrollPad");
+  const rng = document.getElementById("sharedScrollRange");
+  if(!wrap || !bar || !pad || !rng) return;
+
+  const {ref, out} = getAsmPanes();
+  if(!ref || !out){
+    wrap.style.display = "none";
+    return;
+  }
+  wrap.style.display = "flex";
+
+  // Ensure content widths are measured after render
+  const maxW = Math.max(ref.scrollWidth, out.scrollWidth);
+  const viewW = Math.max(1, (Math.min(ref.clientWidth || 0, out.clientWidth || 0) || (ref.clientWidth || out.clientWidth || 0) || 1));
+  const maxScroll = Math.max(0, maxW - viewW);
+
+  pad.style.width = Math.max(maxW, viewW + 2) + "px";
+  rng.max = String(maxScroll);
+  rng.value = String(Math.min(maxScroll, Math.max(ref.scrollLeft, out.scrollLeft)));
+
+  // Keep the bar thumb consistent
+  bar.scrollLeft = parseInt(rng.value || "0", 10);
+}
+
+function setSharedScroll(x){
+  const {ref, out} = getAsmPanes();
+  const bar = document.getElementById("sharedScrollBar");
+  const rng = document.getElementById("sharedScrollRange");
+  if(!ref || !out || !bar || !rng) return;
+
+  const val = Math.max(0, x|0);
+  _sharedScrollSyncing = true;
+  ref.scrollLeft = val;
+  out.scrollLeft = val;
+  bar.scrollLeft = val;
+  rng.value = String(val);
+  _sharedScrollSyncing = false;
+}
+
+function setupSharedScroll(){
+  const bar = document.getElementById("sharedScrollBar");
+  const rng = document.getElementById("sharedScrollRange");
+  if(!bar || !rng) return;
+
+  bar.addEventListener("scroll", () => {
+    if(_sharedScrollSyncing) return;
+    setSharedScroll(bar.scrollLeft);
+  }, {passive:true});
+
+  rng.addEventListener("input", () => {
+    if(_sharedScrollSyncing) return;
+    setSharedScroll(parseInt(rng.value || "0", 10));
+  });
+
+  // If user scrolls either pane (trackpad), sync everything
+  document.addEventListener("scroll", (ev) => {
+    const {ref, out} = getAsmPanes();
+    if(_sharedScrollSyncing || !ref || !out) return;
+    if(ev.target === ref || ev.target === out){
+      setSharedScroll(ev.target.scrollLeft);
+    }
+  }, true);
+
+  window.addEventListener("resize", () => {
+    updateSharedScrollMetrics();
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  setupSharedScroll();
+});
+
+function renderAssemblyPreview(){
+  const sec = document.getElementById("preview-section");
+  const mapEl = document.getElementById("preview-map");
+  const alnEl = document.getElementById("preview-aln");
+  const badge = document.getElementById("preview-badge-wrap");
+
+  if(!sec || !mapEl || !alnEl) return;
+
+  if(!codons.length){
+    sec.style.display="none";
+    if(badge) badge.innerHTML="";
+    mapEl.innerHTML="";
+    alnEl.innerHTML="";
+    return;
+  }
+
+  sec.style.display="block";
+
+  const showDna = document.getElementById("preview-show-dna")?.checked ?? true;
+  const showDeg = document.getElementById("preview-show-deg")?.checked ?? true;
+  const blockAa = protein.length; // single-line horizontal viewer
+  const view = document.getElementById("preview-view")?.value || "duplex";
+  const wantMap = document.getElementById("preview-show-map")?.checked ?? true;
+
+  // Selector-only view while pending, or when not in assembly mode
+  if(needsRun || oligoMode!=="assembly"){
+    const msg = (oligoMode!=="assembly")
+      ? `Switch Mode to “Assembly (overlap extension)” to render oligo overlaps/duplex alignment.`
+      : `Pending changes — click RUN to recalculate oligo tiling and overlaps.`;
+
+    if(badge){
+      badge.innerHTML = needsRun
+        ? `<div class="warn-badge">pending — click RUN</div>`
+        : `<div class="warn-badge">mode: ${oligoMode}</div>`;
+    }
+
+    mapEl.innerHTML = "";
+    alnEl.innerHTML = buildSelectorBlocksHtml(blockAa, showDna, showDeg, msg);
+    reanchorDropdownInPreview();
+    return;
+  }
+
+  // Ensure we have a plan + tiles
+  if(!asmPlanCache || !asmPlanCache.tiles || !asmPlanCache.tiles.length){
+    // Try to compute by rendering assembly oligos (also sets asmPlanCache)
+    renderAssemblyOligos();
+  }
+
+  if(!asmPlanCache || !asmPlanCache.tiles || !asmPlanCache.tiles.length){
+    if(badge) badge.innerHTML=`<div class="warn-badge">No feasible tiling</div>`;
+    mapEl.innerHTML="";
+    alnEl.innerHTML = buildSelectorBlocksHtml(blockAa, showDna, showDeg, "No assembly plan available with current constraints. Adjust overlap / oligo length / Tm.");
+    reanchorDropdownInPreview();
+    return;
+  }
+
+  const tiles = asmPlanCache.tiles;
+
+  if(badge){
+    badge.innerHTML = `<div class="count-badge">${tiles.length} tile${tiles.length!==1?"s":""}</div>
+      <div class="warn-badge">${asmPlanCache.plan?.varOnReverse ?? 0} variant-site${(asmPlanCache.plan?.varOnReverse ?? 0)!==1?"s":""} on REV tiles</div>`;
+  }
+
+  mapEl.innerHTML = (wantMap ? buildAsmMapSvg(tiles) : "");
+
+  alnEl.innerHTML = (view==="duplex")
+    ? buildDuplexBlocksHtml(tiles, blockAa, showDna, showDeg)
+    : buildAlignmentBlocksHtml(tiles, blockAa, showDna, showDeg);
+
+  reanchorDropdownInPreview();
+  setupAsmScrollSync();
+  // Ensure layout has been applied before measuring scroll widths
+  requestAnimationFrame(() => {
+    updateSharedScrollMetrics();
+    requestAnimationFrame(updateSharedScrollMetrics);
+  });
+}
+
+
+function getAssemblyPreviewText(){
+  if(oligoMode!=="assembly" || !asmPlanCache || !asmPlanCache.tiles) return "";
+  const tiles = asmPlanCache.tiles;
+  const blockAa = protein.length;
+  const showDna = document.getElementById("preview-show-dna")?.checked ?? true;
+  const showDeg = document.getElementById("preview-show-deg")?.checked ?? true;
+
+  const nAA = protein.length;
+  const varNtSet = new Set(Object.keys(varMap).map(Number).map(p=>p*3));
+
+  let out = [];
+  out.push(`# Assembly preview (before PCR)`);
+  out.push(`# Codon table: ${codonScheme}`);
+  out.push(`# Params: oligoLen=${asmParams.oligoLen} nt | overlap=${asmParams.overlapMin}-${asmParams.overlapMax} nt | overlapTm≥${asmParams.overlapTm}°C | frame3=${asmParams.frame3} | variantsNOTinOverlaps=${asmParams.avoidVarOverlap}`);
+  out.push(`# REV tiles shown in annealing orientation for alignment.`);
+  out.push("");
+
+  for(let b0=0; b0<nAA; b0+=blockAa){
+    const b1 = Math.min(nAA, b0+blockAa);
+    const ntStart=b0*3, ntEnd=b1*3;
+
+    out.push(`## aa ${b0+1}-${b1} | nt ${ntStart+1}-${ntEnd}`);
+    out.push(`POS   ${fmtRulerRow(b0, b1-b0)}`);
+    out.push(`WTAA  ${fmtAaRow(protein.slice(b0,b1))}`);
+    out.push(`VARS  ${fmtVarRow(b0, b1-b0)}`);
+    if(showDeg) out.push(`DEG   ${fmtDegRow(b0, b1-b0)}`);
+    if(showDna) out.push(`WTDNA ${fmtDnaRow(codons.slice(b0,b1))}`);
+    out.push("");
+
+    let any=false;
+    for(const t of tiles){
+      if(t.end<=ntStart || t.start>=ntEnd) continue;
+      any=true;
+
+      const disp = (t.orient==="F") ? t.seqOrder.toUpperCase() : reverseStr(t.seqOrder.toUpperCase());
+      const s = Math.max(t.start, ntStart);
+      const e = Math.min(t.end, ntEnd);
+      const off = s - t.start;
+      const seg = disp.slice(off, off+(e-s));
+
+      const padCod = Math.floor((s-ntStart)/3);
+      const pad = " ".repeat(padCod*4);
+
+      let segTxt="";
+      for(let i=0;i<seg.length;i+=3){
+        const cod = seg.slice(i,i+3);
+        const absNt = s+i;
+
+        const inPrevOv = t.prevOv>0 && absNt>=t.start && absNt < (t.start+t.prevOv);
+        const inNextOv = t.nextOv>0 && absNt>= (t.end-t.nextOv) && absNt < t.end;
+        const isOv = inPrevOv||inNextOv;
+
+        const isVar = varNtSet.has(absNt);
+        const tag = (isOv?"[OV]":"    ") + (isVar?"[VAR]":"     ");
+        segTxt += cod + " ";
+      }
+      const arrow = (t.orient==="F") ? "->" : "<-";
+      out.push(`${t.name}${arrow}`.padEnd(12," ") + `${pad}${segTxt}`);
+    }
+    if(!any) out.push(`tiles  —`);
+    out.push("");
+  }
+  return out.join("\n");
+}
+
+function copyAssemblyPreview(){
+  if(needsRun) runDesign();
+  const txt = getAssemblyPreviewText();
+  if(!txt){ alert("No assembly preview available."); return; }
+  copyTxt(null, txt);
+  alert("Copied assembly preview to clipboard.");
+}
+
+function exportAssemblyPreviewTxt(){
+  if(needsRun) runDesign();
+  const txt = getAssemblyPreviewText();
+  if(!txt){ alert("No assembly preview available."); return; }
+  dl("assembly_preview.txt", txt, "text/plain");
+}
+
+/* ═══════════════════════════════════════════════
+   RENDERING
+═══════════════════════════════════════════════ */
+function renderSeqStats(){
+  const stats = document.getElementById("seq-stats");
+  if(!stats) return;
+  if(!codons.length){ stats.innerHTML=""; return; }
+  stats.innerHTML = `${protein.length} residues<br>${codons.length*3} nt`;
+}
+
+function renderSelection(){
+  // Mutation selection is performed directly in the Assembly Viewer.
+  // (Click WT AA letters to open the amino-acid dropdown.)
+  renderSeqStats();
+}
+
+function renderOutputs(){
+  renderCombinations();
+  renderOligos();
+  renderAssemblyPreview();
+}
+
+function renderAll(){
+  renderSelection();
+  renderOutputs();
+}
+
+/* ═══════════════════════════════════════════════
+   RUN GATING (keeps UI tidy)
+   - Selection updates immediately
+   - Outputs (oligos / assembly preview / combinations) update on RUN
+═══════════════════════════════════════════════ */
+function updateRunUI(){
+  const btn=document.getElementById("run-btn");
+  const hint=document.getElementById("run-hint");
+  if(btn) btn.classList.toggle("pending", !!needsRun);
+  if(hint) hint.style.display = needsRun ? "inline-flex" : "none";
+}
+
+function markDirty(){
+  if(!codons.length){
+    needsRun=false;
+    updateRunUI();
+    return;
+  }
+  needsRun=true;
+  asmPlanCache=null;
+  updateRunUI();
+}
+
+function runDesign(){
+  if(!codons.length){
+    needsRun=false;
+    updateRunUI();
+    renderOutputs();
+    return;
+  }
+  needsRun=false;
+  updateRunUI();
+  renderOutputs();
+}
+
+/* ═══════════════════════════════════════════════
+   EVENT HANDLERS
+═══════════════════════════════════════════════ */
+function toggleDropdown(e, pos, anchorEl) {
+  e.stopPropagation();
+  const anchor = anchorEl || (e.target && e.target.closest ? e.target.closest(".sel-aa") : null) || e.currentTarget || e.target;
+  if(activeDropdownPos===pos && activeDropdownAnchor===anchor){ closeDropdown(); return; }
+  activeDropdownPos=pos;
+  activeDropdownAnchor=anchor;
+  renderDropdown(pos);
+
+  // Highlight the active AA cell (assembly viewer)
+  document.querySelectorAll(".sel-aa.active").forEach(el=>el.classList.remove("active"));
+  if(activeDropdownAnchor && activeDropdownAnchor.classList) activeDropdownAnchor.classList.add("active");
+}
+
+function closeDropdown() {
+  activeDropdownPos=null;
+  activeDropdownAnchor=null;
+  const dd=document.getElementById("dropdown");
+  if(dd) dd.style.display="none";
+  document.querySelectorAll(".sel-aa.active").forEach(el=>el.classList.remove("active"));
+}
+
+function toggleVariant(pos, aa) {
+  pushHistory();
+  if(!varMap[pos]) varMap[pos]=new Set();
+  if(varMap[pos].has(aa)) varMap[pos].delete(aa); else varMap[pos].add(aa);
+  if(varMap[pos].size===0) delete varMap[pos];
+
+  // If WT was excluded, ensure we still have at least one non-WT option
+  if(wtIncludeMap[pos]===false && (!varMap[pos] || !varMap[pos].size)){
+    delete wtIncludeMap[pos];
+  }
+
+  renderDropdown(pos); // update the open dropdown
+  renderSelection();
+  markDirty();
+  renderOutputs();
+}
+
+function toggleWTInclude(pos){
+  pushHistory();
+  const wtIncluded = (wtIncludeMap[pos] !== false);
+
+  if(wtIncluded){
+    const hasVars = varMap[pos] && varMap[pos].size;
+    if(!hasVars){
+      alert("To exclude WT at this position, select at least one alternative amino acid first.");
+      return;
+    }
+    wtIncludeMap[pos] = false;
+  } else {
+    delete wtIncludeMap[pos];
+  }
+
+  renderDropdown(pos);
+  renderSelection();
+  markDirty();
+  renderOutputs();
+}
+
+function toggleWTIncludeFromPill(e, pos){
+  e.stopPropagation();
+  toggleWTInclude(pos);
+}
+
+
+function removeVariant(e, pos, aa) {
+  pushHistory();
+  e.stopPropagation();
+  if(varMap[pos]) { varMap[pos].delete(aa); if(!varMap[pos].size) delete varMap[pos]; }
+  if(wtIncludeMap[pos]===false && (!varMap[pos] || !varMap[pos].size)){
+    delete wtIncludeMap[pos];
+  }
+  if(activeDropdownPos===pos) renderDropdown(pos);
+  renderSelection();
+  markDirty();
+  renderOutputs();
+}
+
+function clearPosition(pos) {
+  pushHistory();
+  delete varMap[pos];
+  delete wtIncludeMap[pos];
+  closeDropdown();
+  renderSelection();
+  markDirty();
+  renderOutputs();
+}
+
+function clearAll() {
+  pushHistory();
+  varMap={};
+  wtIncludeMap={};
+  codons=[]; protein=[];
+  document.getElementById("seq-in").value="";
+  closeDropdown();
+  needsRun=false;
+  asmPlanCache=null;
+  updateRunUI();
+  renderAll();
+}
+
+function onFlankChange(v) {
+  pushHistory();
+  flankLen=Math.max(5,Math.min(80,parseInt(v)||20));
+  markDirty();
+  renderOligos();
+}
+
+
+function onOligoModeChange(mode) {
+  pushHistory();
+  oligoMode = mode;
+  const mutCtr = document.getElementById("mut-controls");
+  const asmCtr = document.getElementById("asm-controls");
+  if(mutCtr) mutCtr.style.display = (mode==="mutagenic") ? "flex" : "none";
+  if(asmCtr) asmCtr.style.display = (mode==="assembly") ? "flex" : "none";
+
+  const warnPill = document.getElementById("asm-warn");
+  if(warnPill) warnPill.style.display="none";
+
+  asmPlanCache = null;
+  markDirty();
+
+  // Update any visible output areas to “pending”
+  renderOligos();
+  renderAssemblyPreview();
+  renderCombinations();
+}
+
+function onAsmParamChange() {
+  pushHistory();
+  const n = (id, def, lo, hi)=>{
+    const el = document.getElementById(id);
+    if(!el) return def;
+    let v = parseFloat(el.value);
+    if(isNaN(v)) v = def;
+    if(lo!==null && lo!==undefined) v = Math.max(lo, v);
+    if(hi!==null && hi!==undefined) v = Math.min(hi, v);
+    el.value = v;
+    return v;
+  };
+
+  asmParams.oligoLen = n("asm-len", 120, 60, 240);
+  asmParams.overlapMin = n("asm-ov-min", 25, 8, 200);
+  asmParams.overlapMax = n("asm-ov-max", 45, 8, 200);
+  if(asmParams.overlapMax < asmParams.overlapMin){
+    const t = asmParams.overlapMin; asmParams.overlapMin = asmParams.overlapMax; asmParams.overlapMax = t;
+  }
+  asmParams.overlapTm = n("asm-tm", 60, 40, 90);
+
+  asmParams.start = document.getElementById("asm-start")?.value || "auto";
+  asmParams.frame3 = document.getElementById("asm-frame3")?.checked ?? true;
+  asmParams.avoidVarOverlap = document.getElementById("asm-avoid-var")?.checked ?? true;
+
+  asmParams.overlapTarget = Math.round((asmParams.overlapMin + asmParams.overlapMax)/2);
+
+  asmPlanCache = null;
+  markDirty();
+  renderOligos();
+  renderAssemblyPreview();
+}
+
+function onCodonSchemeChange() {
+  pushHistory();
+  codonScheme=document.getElementById("codon-scheme").value;
+  markDirty();
+  renderCombinations();
+  renderOligos();
+  renderAssemblyPreview();
+}
+
+// Close dropdown on outside click
+document.addEventListener("click", e=>{
+  const dd=document.getElementById("dropdown");
+  const preview=document.getElementById("preview-scroll");
+  if(dd && dd.contains(e.target)) return;
+  if(preview && preview.contains(e.target)) return;
+  closeDropdown();
+});
+
+
+// Clickable mutation selection inside the Assembly Viewer (WT AA row)
+(function initAssemblySelectorClicks(){
+  const sc = document.getElementById("preview-scroll");
+  if(!sc) return;
+  sc.addEventListener("click", (e)=>{
+    const cell = (e.target && e.target.closest) ? e.target.closest(".sel-aa") : null;
+    if(!cell) return;
+    const pos = parseInt(cell.dataset.pos || "");
+    if(!Number.isFinite(pos)) return;
+    toggleDropdown(e, pos, cell);
+  });
+})();
+
+// Close on scroll to reposition
+window.addEventListener("scroll",()=>{if(activeDropdownPos!==null) positionDropdown(activeDropdownPos);},true);
+
+/* ═══════════════════════════════════════════════
+   CLIPBOARD
+═══════════════════════════════════════════════ */
+async function copyTxt(btn, txt) {
+  try{await navigator.clipboard.writeText(txt);}
+  catch{const t=document.createElement("textarea");t.value=txt;document.body.appendChild(t);t.select();document.execCommand("copy");t.remove();}
+  if(btn){const orig=btn.textContent;btn.textContent="✓ ok";btn.classList.add("ok");setTimeout(()=>{btn.textContent=orig;btn.classList.remove("ok");},1500);}
+}
+
+function copyCombo(btn, label, dna) { copyTxt(btn, `>${label}\n${dna}`); }
+
+function copyAllDNA() {
+  const combos=enumerateCombinations();
+  const lines=combos.map(c=>`>${c.label}\n${buildDNA(c)}`).join("\n");
+  copyTxt(null,lines); alert(`Copied ${combos.length} sequences to clipboard.`);
+}
+
+async function copyAllOligos() {
+  if(needsRun) runDesign();
+  // Assembly mode: copy tiled oligos (FASTA-like)
+  if(oligoMode==="assembly"){
+    if(!asmPlanCache || asmPlanCache.mode!=="assembly") renderAssemblyOligos();
+    if(!asmPlanCache || !asmPlanCache.tiles || !asmPlanCache.tiles.length) return;
+
+    const lines=[];
+    lines.push(`# Assembly oligos (overlap extension)`);
+    lines.push(`# Codon table: ${codonScheme}`);
+    lines.push(`# Params: oligoLen=${asmParams.oligoLen} nt | overlap=${asmParams.overlapMin}-${asmParams.overlapMax} nt | overlapTm≥${asmParams.overlapTm}°C | frame3=${asmParams.frame3} | variantsNOTinOverlaps=${asmParams.avoidVarOverlap}`);
+    lines.push(`# Generated: ${new Date().toISOString()}`);
+    lines.push("");
+
+    asmPlanCache.tiles.forEach(t=>{
+      lines.push(`>${t.name}  ${t.orient==="F"?"FWD":"REV"}  nt ${t.start+1}-${t.end}`);
+      lines.push(t.seqOrder);
+    });
+
+    try{ await navigator.clipboard.writeText(lines.join("\n")); }catch{}
+    alert(`Copied ${asmPlanCache.tiles.length} assembly oligo(s) to clipboard.`);
+    return;
+  }
+
+  // Mutagenic SDM-style mode: copy position×substitution oligo pairs
+  const lines=[];
+  Object.keys(varMap).map(Number).sort((a,b)=>a-b).forEach(pos=>{
+    [...(varMap[pos]||[])].forEach(newAA=>{
+      const o=designOligo(pos,newAA);
+      const name=`Pos${String(pos+1).padStart(3,"0")}_${protein[pos]}${pos+1}${newAA}`;
+      lines.push(`>${name}_sense\n${o.sense}`);
+      lines.push(`>${name}_anti\n${o.anti}`);
+    });
+  });
+  if(!lines.length) return;
+  try{await navigator.clipboard.writeText(lines.join("\n"));}catch{}
+  alert(`Copied ${lines.length/2} oligo pair(s) to clipboard.`);
+}
+
+function csvEsc(x){
+  const s = String(x===undefined||x===null ? "" : x);
+  return `"${s.replace(/"/g,'""')}"`;
+}
+
+function exportOligosTxt() {
+  if(needsRun) runDesign();
+  // Assembly mode
+  if(oligoMode==="assembly"){
+    if(!asmPlanCache || asmPlanCache.mode!=="assembly") renderAssemblyOligos();
+    if(!asmPlanCache || !asmPlanCache.tiles || !asmPlanCache.tiles.length) return;
+
+    const lines=[
+      "# Assembly oligonucleotides (overlap extension / PCR assembly)",
+      `# Codon table: ${codonScheme}`,
+      `# Params: oligoLen=${asmParams.oligoLen} nt | overlap=${asmParams.overlapMin}-${asmParams.overlapMax} nt | overlapTm≥${asmParams.overlapTm}°C | frame3=${asmParams.frame3} | variantsNOTinOverlaps=${asmParams.avoidVarOverlap}`,
+      `# Generated: ${new Date().toISOString()}`,
+      "# Sequences are 5'→3' as ordered. Degenerate codons are IUPAC-encoded (e.g., N, R, Y, K, M, S, W, B, D, H, V).",
+      ""
+    ];
+
+    asmPlanCache.tiles.forEach(t=>{
+      lines.push(`## ${t.name}  |  ${t.orient==="F"?"FWD":"REV"}  |  nt ${t.start+1}-${t.end}  |  len ${t.len} nt  |  prevOv ${t.prevOv||0}  |  nextOv ${t.nextOv||0}`);
+      lines.push(t.seqOrder);
+      lines.push("");
+    });
+
+    dl("assembly_oligos.txt", lines.join("\n"), "text/plain");
+    return;
+  }
+
+  // Mutagenic mode (existing behavior)
+  const lines=["# Mutagenic Oligonucleotides for Variant Library Construction",
+    `# Tool: Variant//Combinatorics | Codon table: ${codonScheme}`,
+    `# Flank length: ${flankLen} nt | Generated: ${new Date().toISOString()}`,
+    "# Sense oligos 5'→3': lowercase=flanking WT sequence, UPPERCASE=new codon",
+    "# Each position×substitution = one oligo pair to order", ""];
+  Object.keys(varMap).map(Number).sort((a,b)=>a-b).forEach(pos=>{
+    const wtAA=protein[pos];
+    [...(varMap[pos]||[])].forEach(newAA=>{
+      const o=designOligo(pos,newAA);
+      const tm=calcTm(o.sense);
+      const name=`Pos${String(pos+1).padStart(3,"0")}_${wtAA}${pos+1}${newAA}`;
+      lines.push(`## ${name}  |  ${wtAA}→${newAA}  |  Codon: ${o.newCodon}  |  ${o.length} nt  |  Tm~${tm}°C`);
+      lines.push(`> ${name}_sense`);
+      lines.push(o.sense);
+      lines.push(`> ${name}_anti`);
+      lines.push(o.anti);
+      lines.push("");
+    });
+  });
+  dl("mutagenic_oligos.txt",lines.join("\n"), "text/plain");
+}
+
+function exportOligosCsv() {
+  if(needsRun) runDesign();
+  // Assembly mode
+  if(oligoMode==="assembly"){
+    if(!asmPlanCache || asmPlanCache.mode!=="assembly") renderAssemblyOligos();
+    if(!asmPlanCache || !asmPlanCache.tiles || !asmPlanCache.tiles.length) return;
+
+    const rows=[["Name","Orientation","Start_nt_1based","End_nt_1based","Length_nt","PrevOverlap_nt","PrevOverlap_Tm","NextOverlap_nt","NextOverlap_Tm","VariantSites","Sequence_5to3"]];
+    asmPlanCache.tiles.forEach(t=>{
+      rows.push([
+        t.name,
+        t.orient==="F"?"FWD":"REV",
+        t.start+1,
+        t.end,
+        t.len,
+        t.prevOv||0,
+        t.prevTm||"",
+        t.nextOv||0,
+        t.nextTm||"",
+        t.variantCount||0,
+        t.seqOrder
+      ]);
+    });
+
+    dl("assembly_oligos.csv", rows.map(r=>r.map(csvEsc).join(",")).join("\n"), "text/csv");
+    return;
+  }
+
+  // Mutagenic mode (existing behavior)
+  const rows=[["Name","Position","WT_AA","New_AA","New_Codon","Length_nt","Tm_C","Sense_5to3","Anti_5to3"]];
+  Object.keys(varMap).map(Number).sort((a,b)=>a-b).forEach(pos=>{
+    const wtAA=protein[pos];
+    [...(varMap[pos]||[])].forEach(newAA=>{
+      const o=designOligo(pos,newAA);
+      rows.push([
+        `Pos${String(pos+1).padStart(3,"0")}_${wtAA}${pos+1}${newAA}`,
+        pos+1,
+        wtAA,
+        newAA,
+        o.newCodon,
+        o.length,
+        calcTm(o.sense),
+        o.sense,
+        o.anti
+      ]);
+    });
+  });
+  dl("mutagenic_oligos.csv", rows.map(r=>r.map(csvEsc).join(",")).join("\n"), "text/csv");
+}
+
+function dl(fname, data, type) {
+  const b=new Blob([data],{type});
+  const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=fname;a.click();
+}
+
+/* ═══════════════════════════════════════════════
+   INIT & SEQUENCE WATCHER
+═══════════════════════════════════════════════ */
+const seqIn=document.getElementById("seq-in");
+seqIn.addEventListener("input",()=>{
+  // Auto-resize textarea
+  seqIn.style.height="auto"; seqIn.style.height=Math.min(120,seqIn.scrollHeight)+"px";
+
+  // Track sequence changes WITHOUT wiping your variant selections on minor edits.
+  const rawNow = seqIn.value ?? "";
+  const newCod = parseCodons(rawNow);
+  const newClean = newCod.join("");
+  const oldClean = codons.join("");
+
+  // Initialize lastSeqInputValue on first interaction
+  if(lastSeqInputValue===undefined || lastSeqInputValue===null || lastSeqInputValue===""){
+    lastSeqInputValue = rawNow;
+  }
+
+  // If the underlying ATGC sequence didn't change, do nothing (keep selections)
+  if(newClean === oldClean){
+    lastSeqInputValue = rawNow;
+    return;
+  }
+
+  // Save previous state for Undo (uses the *previous* raw textarea value)
+  pushHistory(lastSeqInputValue);
+
+  // Update sequence model
+  const prevLen = protein.length;
+  codons = newCod;
+  protein = codons.map(c=>GC[c]||"?");
+
+  // If length changed, prune selections that are now out of range.
+  // If length did not change, KEEP your selections (you don't need to re-click everything).
+  const nAA = protein.length;
+  if(nAA !== prevLen){
+    for(const k of Object.keys(varMap)){
+      const p = parseInt(k);
+      if(!Number.isFinite(p) || p<0 || p>=nAA) delete varMap[k];
+    }
+    for(const k of Object.keys(wtIncludeMap)){
+      const p = parseInt(k);
+      if(!Number.isFinite(p) || p<0 || p>=nAA) delete wtIncludeMap[k];
+    }
+  }
+
+  lastSeqInputValue = rawNow;
+
+  closeDropdown();
+  markDirty();
+  renderSelection();
+  renderOutputs(); // shows “pending” until RUN
+});
+
+// Initial load
+lastSeqInputValue = seqIn.value;
+codons=parseCodons(seqIn.value);
+protein=codons.map(c=>GC[c]||"?");
+initCombosPanel();
+initOligosPanel();
+needsRun=false;
+updateRunUI();
+updateUndoUI();
+renderSelection();
+runDesign();
+</script>
+</body>
+</html>
