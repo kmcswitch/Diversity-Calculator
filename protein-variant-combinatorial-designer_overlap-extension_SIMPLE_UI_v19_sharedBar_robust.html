@@ -817,6 +817,18 @@ html, body { max-width: 100%; overflow-x: hidden; }
 .asm-refwin, .asm-outwin{ overflow-x:auto !important; overflow-y:hidden !important; }
 
 #shared-scroll-wrap{ width:100%; max-width:100%; }
+.shared-scroll-section{
+  margin: 10px 0 6px;
+  padding: 0 2px;
+}
+.shared-scroll-title{
+  font-size:9px;
+  color:var(--slate);
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  font-family:var(--dm);
+  margin:0 0 4px 12px;
+}
 #sharedScrollBar{
   width:100%;
   max-width:100%;
@@ -953,13 +965,6 @@ html, body { max-width: 100%; overflow-x: hidden; }
     <div class="panel-hdr">
       <div class="panel-title">Assembly Preview (before PCR)</div>
       <div id="preview-badge-wrap"></div>
-      
-    <div class="shared-scroll-wrap" id="shared-scroll-wrap" style="display:none">
-      <div id="sharedScrollBar" aria-label="Horizontal scroll (shared)">
-        <div id="sharedScrollPad"></div>
-      </div>
-      <input id="sharedScrollRange" type="range" min="0" max="0" value="0" step="1" />
-    </div>
 
 <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;">
         <button class="exp-btn" onclick="copyAssemblyPreview()">⎘ Copy preview</button>
@@ -995,6 +1000,16 @@ html, body { max-width: 100%; overflow-x: hidden; }
     </div>
   </div>
 </section>
+
+<div class="shared-scroll-section" id="shared-scroll-section" style="display:none">
+  <div class="shared-scroll-title">Shared alignment scrollbar</div>
+  <div class="shared-scroll-wrap" id="shared-scroll-wrap">
+    <div id="sharedScrollBar" aria-label="Horizontal scroll (shared)">
+      <div id="sharedScrollPad"></div>
+    </div>
+    <input id="sharedScrollRange" type="range" min="0" max="0" value="0" step="1" />
+  </div>
+</div>
 
 
 <!-- ══════════════════════════════════════
@@ -2878,16 +2893,19 @@ function getAsmPanes(){
 
 function updateSharedScrollMetrics(){
   const wrap = document.getElementById("shared-scroll-wrap");
+  const section = document.getElementById("shared-scroll-section");
   const bar = document.getElementById("sharedScrollBar");
   const pad = document.getElementById("sharedScrollPad");
   const rng = document.getElementById("sharedScrollRange");
-  if(!wrap || !bar || !pad || !rng) return;
+  if(!wrap || !bar || !pad || !rng || !section) return;
 
   const {ref, out} = getAsmPanes();
   if(!ref || !out){
+    section.style.display = "none";
     wrap.style.display = "none";
     return;
   }
+  section.style.display = "block";
   wrap.style.display = "flex";
 
   // Ensure content widths are measured after render
